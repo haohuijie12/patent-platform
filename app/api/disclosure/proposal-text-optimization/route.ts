@@ -58,7 +58,7 @@ export async function GET() {
     method: "POST",
     required_fields: {
       text: "技术方案文本",
-      optimizationType: "优化类型 (standard/detailed/concise/legal, 可选)"
-    }
+      optimizationType: "优化类型 (standard/detailed/concise/legal, 可选)",
+    },
   });
 }

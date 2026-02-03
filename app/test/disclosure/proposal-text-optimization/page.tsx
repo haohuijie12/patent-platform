@@ -33,37 +33,43 @@ import { toast } from "sonner";
 export default function ProposalTextOptimizationPage() {
   // 状态管理
   const [originalText, setOriginalText] = useState(
-    `本发明提供一种基于深度学习的图像识别方法。该方法包括：首先通过摄像头采集图像，然后使用神经网络进行处理，最后输出识别结果。系统能够识别多种物体，具有较高的准确率。`
+    `本发明提供一种基于深度学习的图像识别方法。该方法包括：首先通过摄像头采集图像，然后使用神经网络进行处理，最后输出识别结果。系统能够识别多种物体，具有较高的准确率。`,
   );
-  
+
   const [optimizationType, setOptimizationType] = useState("standard");
-  const [history, setHistory] = useState<Array<{original: string, optimized: string, type: string}>>([]);
+  const [history, setHistory] = useState<
+    Array<{ original: string; optimized: string; type: string }>
+  >([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // AI 完成钩子
-  const { completion, complete, isLoading, stop, setCompletion } = useCompletion({
-    api: "/api/disclosure/proposal-text-optimization",
-    streamProtocol: "text",
-    onFinish: () => {
-      toast.success("优化完成", {
-        description: "技术方案已成功优化",
-      });
-      // 保存到历史记录
-      if (completion) {
-        setHistory(prev => [{
-          original: originalText,
-          optimized: completion,
-          type: optimizationType
-        }, ...prev.slice(0, 9)]); // 只保留最近10条
-      }
-    },
-    onError: (error: Error) => {
-      console.error(error);
-      toast.error("优化出错", {
-        description: error.message || "请稍后重试",
-      });
-    },
-  });
+  const { completion, complete, isLoading, stop, setCompletion } =
+    useCompletion({
+      api: "/api/disclosure/proposal-text-optimization",
+      streamProtocol: "text",
+      onFinish: () => {
+        toast.success("优化完成", {
+          description: "技术方案已成功优化",
+        });
+        // 保存到历史记录
+        if (completion) {
+          setHistory((prev) => [
+            {
+              original: originalText,
+              optimized: completion,
+              type: optimizationType,
+            },
+            ...prev.slice(0, 9),
+          ]); // 只保留最近10条
+        }
+      },
+      onError: (error: Error) => {
+        console.error(error);
+        toast.error("优化出错", {
+          description: error.message || "请稍后重试",
+        });
+      },
+    });
 
   // 处理生成
   const handleOptimize = async () => {
@@ -127,10 +133,30 @@ export default function ProposalTextOptimizationPage() {
 
   // 优化类型描述
   const optimizationTypes = [
-    { value: "standard", label: "标准优化", icon: <FileText className="h-4 w-4" />, description: "平衡专业性和可读性" },
-    { value: "detailed", label: "详细优化", icon: <Sparkles className="h-4 w-4" />, description: "增加技术细节和实施方式" },
-    { value: "concise", label: "简明优化", icon: <Zap className="h-4 w-4" />, description: "提炼核心，简洁表达" },
-    { value: "legal", label: "法律优化", icon: <Scale className="h-4 w-4" />, description: "强化法律保护角度" },
+    {
+      value: "standard",
+      label: "标准优化",
+      icon: <FileText className="h-4 w-4" />,
+      description: "平衡专业性和可读性",
+    },
+    {
+      value: "detailed",
+      label: "详细优化",
+      icon: <Sparkles className="h-4 w-4" />,
+      description: "增加技术细节和实施方式",
+    },
+    {
+      value: "concise",
+      label: "简明优化",
+      icon: <Zap className="h-4 w-4" />,
+      description: "提炼核心，简洁表达",
+    },
+    {
+      value: "legal",
+      label: "法律优化",
+      icon: <Scale className="h-4 w-4" />,
+      description: "强化法律保护角度",
+    },
   ];
 
   return (
@@ -138,13 +164,19 @@ export default function ProposalTextOptimizationPage() {
       {/* 标题栏 */}
       <div className="flex items-center justify-between space-y-2 mb-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">专利技术方案优化</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            专利技术方案优化
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
             基于AI对专利交底书技术方案进行专业优化，提升专利质量
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleClearOutput} disabled={!completion}>
+          <Button
+            variant="outline"
+            onClick={handleClearOutput}
+            disabled={!completion}
+          >
             <Eraser className="mr-2 h-4 w-4" />
             清空输出
           </Button>
@@ -169,7 +201,11 @@ export default function ProposalTextOptimizationPage() {
             {/* 优化类型选择 */}
             <div className="space-y-2">
               <Label htmlFor="optimizationType">优化方式</Label>
-              <Select value={optimizationType} onValueChange={setOptimizationType} disabled={isLoading}>
+              <Select
+                value={optimizationType}
+                onValueChange={setOptimizationType}
+                disabled={isLoading}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="选择优化方式" />
                 </SelectTrigger>
@@ -180,7 +216,9 @@ export default function ProposalTextOptimizationPage() {
                         {type.icon}
                         <div>
                           <div>{type.label}</div>
-                          <div className="text-xs text-muted-foreground">{type.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {type.description}
+                          </div>
                         </div>
                       </div>
                     </SelectItem>
@@ -212,14 +250,22 @@ export default function ProposalTextOptimizationPage() {
                   <button
                     type="button"
                     className="hover:text-primary"
-                    onClick={() => setOriginalText(prev => prev + "\n\n技术方案包括以下步骤：")}
+                    onClick={() =>
+                      setOriginalText(
+                        (prev) => prev + "\n\n技术方案包括以下步骤：",
+                      )
+                    }
                   >
                     +步骤
                   </button>
                   <button
                     type="button"
                     className="hover:text-primary"
-                    onClick={() => setOriginalText(prev => prev + "\n\n本发明具有以下优点：")}
+                    onClick={() =>
+                      setOriginalText(
+                        (prev) => prev + "\n\n本发明具有以下优点：",
+                      )
+                    }
                   >
                     +优点
                   </button>
@@ -269,7 +315,10 @@ export default function ProposalTextOptimizationPage() {
                     >
                       <div className="truncate text-left">
                         <div className="font-medium">
-                          {optimizationTypes.find(t => t.value === item.type)?.label}
+                          {
+                            optimizationTypes.find((t) => t.value === item.type)
+                              ?.label
+                          }
                         </div>
                         <div className="truncate text-muted-foreground">
                           {item.original.substring(0, 50)}...
@@ -318,28 +367,35 @@ export default function ProposalTextOptimizationPage() {
                   {/* 优化信息 */}
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <div className={`px-2 py-1 rounded-md text-xs ${
-                        optimizationType === 'legal' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                        optimizationType === 'detailed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                        optimizationType === 'concise' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                      }`}>
-                        {optimizationTypes.find(t => t.value === optimizationType)?.label}
+                      <div
+                        className={`px-2 py-1 rounded-md text-xs ${
+                          optimizationType === "legal"
+                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                            : optimizationType === "detailed"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                              : optimizationType === "concise"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                        }`}
+                      >
+                        {
+                          optimizationTypes.find(
+                            (t) => t.value === optimizationType,
+                          )?.label
+                        }
                       </div>
-                      <div className="text-muted-foreground">
-                        AI优化完成
-                      </div>
+                      <div className="text-muted-foreground">AI优化完成</div>
                     </div>
                     <div className="text-muted-foreground">
                       字符数: {completion.length}
                     </div>
                   </div>
-                  
+
                   {/* 优化内容 */}
                   <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed whitespace-pre-wrap">
                     {completion}
                   </div>
-                  
+
                   {/* 优化建议 */}
                   <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg border">
                     <div className="font-medium mb-1">优化说明：</div>
@@ -368,7 +424,9 @@ export default function ProposalTextOptimizationPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs max-w-sm">
                     <div className="p-2 bg-muted/50 rounded text-center">
                       <div className="font-medium">标准优化</div>
-                      <div className="text-muted-foreground">平衡专业与可读</div>
+                      <div className="text-muted-foreground">
+                        平衡专业与可读
+                      </div>
                     </div>
                     <div className="p-2 bg-muted/50 rounded text-center">
                       <div className="font-medium">法律优化</div>
@@ -391,7 +449,9 @@ export default function ProposalTextOptimizationPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
             <div className="space-y-1">
               <div className="font-medium">1. 输入文本</div>
-              <div className="text-muted-foreground">输入需要优化的技术方案</div>
+              <div className="text-muted-foreground">
+                输入需要优化的技术方案
+              </div>
             </div>
             <div className="space-y-1">
               <div className="font-medium">2. 选择方式</div>

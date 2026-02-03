@@ -28,6 +28,11 @@ export const testConfig: TestMenuItem[] = [
         icon: Sparkles,
       },
       {
+        title: "关键词解释",
+        url: "/test/disclosure/explanation-of-keywords",
+        icon: Search,
+      },
+      {
         title: "有益效果生成",
         url: "/test/disclosure/beneficial-effect-generation",
         icon: Sparkles,
