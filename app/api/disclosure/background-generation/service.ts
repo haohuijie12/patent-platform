@@ -35,7 +35,7 @@ const model = new ChatOpenAI({
     baseURL: process.env.OPENAI_BASE_URL,
   },
   timeout: 120000, // 120s timeout
-  maxRetries: 3,
+  maxRetries: 1,
   streaming: true,
 });
 
@@ -62,25 +62,6 @@ export async function streamBackground(params: {
   try {
     const stream = await backgroundGenerationChain.stream(params);
     return stream;
-  } catch (error) {
-    console.error("背景技术生成时发生错误:", error);
-    throw new Error("背景技术生成失败");
-  }
-}
-
-/**
- * 生成专利背景技术
- * @param params 包含发明名称、技术领域和现有技术问题的对象
- * @returns Promise<string> 生成的背景技术文本
- */
-export async function generateBackground(params: {
-  inventionName: string;
-  technicalField: string;
-  existingProblems: string;
-}): Promise<string> {
-  try {
-    const result = await backgroundGenerationChain.invoke(params);
-    return result;
   } catch (error) {
     console.error("背景技术生成时发生错误:", error);
     throw new Error("背景技术生成失败");

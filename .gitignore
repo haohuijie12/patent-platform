@@ -57,3 +57,6 @@ coverage/
 # Misc
 .vercel
 .turbo
+
+# Claude Code
+.claude/
