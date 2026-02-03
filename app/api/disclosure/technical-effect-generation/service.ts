@@ -1,0 +1,124 @@
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { ChatOpenAI } from "@langchain/openai";
+
+const BENEFICIAL_EFFECTS_TEMPLATE_STRING = `你是一位专业的专利代理师，请根据以下信息为一份专利申请撰写"有益效果"（Beneficial Effects）部分。
+
+输入信息：
+1. 技术背景：{technicalBackground}
+2. 技术方案：{technicalSolution}
+
+撰写要求：
+1. **效果分析**：基于技术方案的核心创新点，分析其带来的具体技术效果。
+2. **量化对比**：尽可能与现有技术进行对比，说明本发明在性能、效率、成本、用户体验等方面的提升。
+3. **多维度阐述**：从技术性能、实施成本、用户体验、可扩展性等多个角度阐述有益效果。
+4. **具体明确**：避免空泛的描述，如"效果好"、"效率高"，应具体说明"识别准确率提升30%"、"处理时间缩短50%"等。
+5. **语言风格**：使用专业、客观的专利法律和技术术语。
+6. **格式**：分段撰写，逻辑清晰。300-500字。
+
+请直接输出有益效果的内容，不要包含Markdown标题（如# 有益效果）或其他开场白。`;
+
+const PROTECTION_POINTS_TEMPLATE_STRING = `你是一位专业的专利代理师，请根据以下信息为一份专利申请撰写"技术关键点和欲保护点"（Technical Key Points and Protection Scope）部分。
+
+输入信息：
+1. 技术背景：{technicalBackground}
+2. 技术方案：{technicalSolution}
+
+撰写要求：
+1. **技术关键点**：识别并提炼技术方案中的核心创新点、关键技术手段、算法、架构设计等。
+2. **保护范围**：明确本发明请求专利保护的技术范围，包括技术特征、实现方式、应用场景等。
+3. **层次清晰**：按照重要程度或逻辑关系，分点列出技术关键点和保护点。
+4. **避免泄露**：不要泄露非必要的实现细节，重点描述技术特征和创新点。
+5. **语言风格**：使用专业、严谨的专利法律和技术术语。
+6. **格式**：分点列出，每点简洁明了。200-400字。
+
+请直接输出技术关键点和欲保护点的内容，不要包含Markdown标题（如# 技术关键点和欲保护点）或其他开场白。`;
+
+const beneficialEffectsPromptTemplate = ChatPromptTemplate.fromTemplate(
+  BENEFICIAL_EFFECTS_TEMPLATE_STRING,
+);
+
+const protectionPointsPromptTemplate = ChatPromptTemplate.fromTemplate(
+  PROTECTION_POINTS_TEMPLATE_STRING,
+);
+
+const model = new ChatOpenAI({
+  modelName: process.env.OPENAI_CHAT_MODEL,
+  temperature: 0.4,
+  openAIApiKey: process.env.OPENAI_API_KEY,
+  configuration: {
+    baseURL: process.env.OPENAI_BASE_URL,
+  },
+  timeout: 120000,
+  maxRetries: 3,
+  streaming: true,
+});
+
+const stringOutputParser = new StringOutputParser();
+
+const beneficialEffectsChain = RunnableSequence.from([
+  beneficialEffectsPromptTemplate,
+  model,
+  stringOutputParser,
+]);
+
+const protectionPointsChain = RunnableSequence.from([
+  protectionPointsPromptTemplate,
+  model,
+  stringOutputParser,
+]);
+
+export async function streamBeneficialEffects(params: {
+  technicalBackground: string;
+  technicalSolution: string;
+}) {
+  try {
+    const stream = await beneficialEffectsChain.stream(params);
+    return stream;
+  } catch (error) {
+    console.error("有益效果生成时发生错误:", error);
+    throw new Error("有益效果生成失败");
+  }
+}
+
+export async function streamProtectionPoints(params: {
+  technicalBackground: string;
+  technicalSolution: string;
+}) {
+  try {
+    const stream = await protectionPointsChain.stream(params);
+    return stream;
+  } catch (error) {
+    console.error("技术关键点和欲保护点生成时发生错误:", error);
+    throw new Error("技术关键点和欲保护点生成失败");
+  }
+}
+
+export async function generateBeneficialEffects(params: {
+  technicalBackground: string;
+  technicalSolution: string;
+}): Promise<string> {
+  try {
+    const result = await beneficialEffectsChain.invoke(params);
+    return result;
+  } catch (error) {
+    console.error("有益效果生成时发生错误:", error);
+    throw new Error("有益效果生成失败");
+  }
+}
+
+export async function generateProtectionPoints(params: {
+  technicalBackground: string;
+  technicalSolution: string;
+}): Promise<string> {
+  try {
+    const result = await protectionPointsChain.invoke(params);
+    return result;
+  } catch (error) {
+    console.error("技术关键点和欲保护点生成时发生错误:", error);
+    throw new Error("技术关键点和欲保护点生成失败");
+  }
+}
+
+export { beneficialEffectsChain, protectionPointsChain };

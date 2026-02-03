@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput } from "lucide-react";
+import { FileText, Search, Type, FileOutput, Sparkles } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -23,6 +23,9 @@ export const testConfig: TestMenuItem[] = [
         icon: Type,
       },
       {
+        title: " “有益效果”和“预保护点”生成",
+        url: "/test/disclosure/technical-effect-generation",
+        icon: Sparkles,
         title: "关键词解释",
         url: "/test/disclosure/explanation-of-keywords",
         icon: Search,
