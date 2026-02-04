@@ -1,4 +1,4 @@
-import { FileText, Search, Type, FileOutput, Sparkles } from "lucide-react";
+import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles } from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -52,6 +52,11 @@ export const testConfig: TestMenuItem[] = [
         title: "报告结论生成",
         url: "/test/report/conclusion-generation",
         icon: FileOutput,
+      },
+      {
+        title: "关键词推荐",
+        url: "/test/report/keyword-recommendation",
+        icon: Tag,
       },
     ],
   },
