@@ -81,11 +81,19 @@ export function DisclosureWorkflow({
   // Step 5: 预览
   const [documentGenerated, setDocumentGenerated] = useState(false);
 
-  // 新增：优化相关状态
+  // 优化相关状态
   const [optimizationType, setOptimizationType] = useState<string>("standard");
   const [optimizationStatus, setOptimizationStatus] = useState<{
     [key: string]: "idle" | "loading" | "success" | "error";
   }>({});
+
+  // 获取技术方案文本
+  const getTechSolutionText = () => {
+    return contentBlocks
+      .filter(block => block.type === "text")
+      .map(block => block.content)
+      .join("\n");
+  };
 
   // 生成技术背景
   const generateTechBackground = async () => {
@@ -189,7 +197,7 @@ export function DisclosureWorkflow({
     }
   };
 
-  // 单个文本块 AI 优化 - 调用真实API
+  // 单个文本块 AI 优化
   const handleOptimizeBlock = async (id: string, content: string) => {
     if (!content.trim()) {
       alert("请先输入要优化的内容");
@@ -262,6 +270,51 @@ export function DisclosureWorkflow({
     }
   };
 
+  // 提取关键词
+  const extractKeywords = async () => {
+    const techSolutionText = getTechSolutionText();
+    if (!techSolutionText.trim()) {
+      alert("请先输入技术方案内容");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/disclosure/explanation-of-keywords", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ techSolution: techSolutionText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("关键词提取失败");
+      }
+
+      const result = await response.json();
+      
+      // 合并关键词，避免重复
+      if (result.keywords && Array.isArray(result.keywords)) {
+        setKeywords(prev => {
+          const existingTerms = new Set(prev.map(kw => kw.term));
+          const newKeywords = result.keywords
+            .filter((kw: any) => !existingTerms.has(kw.term))
+            .map((kw: any) => ({
+              term: kw.term,
+              definition: kw.explanation,
+            }));
+          return [...prev, ...newKeywords];
+        });
+        
+        alert(`成功提取 ${result.keywords.length} 个关键词`);
+      }
+      
+    } catch (error) {
+      console.error("关键词提取失败:", error);
+      alert("关键词提取失败，请稍后重新点击提取");
+    }
+  };
+
   // AI 风格化改写
   const handleAIRewrite = async () => {
     // 收集所有文本块内容
@@ -282,24 +335,8 @@ export function DisclosureWorkflow({
         await handleOptimizeBlock(block.id, block.content);
       }
 
-      // 模拟识别专有词汇
-      const suggestedKeywords = [
-        {
-          term: "技术方案",
-          definition: "指为解决特定技术问题而采用的技术手段的集合",
-        },
-        { term: "实施例", definition: "指发明创造的具体实现方式" },
-        { term: "权利要求", definition: "指专利申请人请求专利保护的技术范围" },
-      ];
-
-      // 合并已有关键词和新关键词
-      const mergedKeywords = [...keywords];
-      suggestedKeywords.forEach((newKw) => {
-        if (!mergedKeywords.some((kw) => kw.term === newKw.term)) {
-          mergedKeywords.push(newKw);
-        }
-      });
-      setKeywords(mergedKeywords);
+      // 自动提取关键词
+      await extractKeywords();
 
       // AI检测问题
       const warnings: AIWarning[] = [];
@@ -356,33 +393,30 @@ export function DisclosureWorkflow({
   };
 
   // 生成有益效果
-  const generateBeneficialEffects = () => {
+  const generateBeneficialEffects = async () => {
     setIsGeneratingEffects(true);
-    setTimeout(() => {
-      setBeneficialEffects(`本发明技术方案具有以下有益效果：
-
-1. 提高了${technicalField}领域的技术效率，相比现有技术提升显著；
-2. 降低了实施成本，使技术方案更易于推广应用；
-3. 改善了用户体验，操作更加便捷、可靠；
-4. 具有良好的扩展性，可适应不同应用场景的需求。`);
-
-      setProtectionPoints(`本发明的技术关键点和欲保护点包括：
-
-1. ${inventionName}的核心技术架构及其实现方法；
-2. 关键技术模块的创新设计及优化方案；
-3. 技术方案中涉及的数据处理方法和流程；
-4. 系统整体的协同工作机制和控制策略。`);
-
+    
+    try {
+      const techText = getTechSolutionText();
+      
+      if (!techText.trim()) {
+        alert("请先输入技术方案");
+        return;
+      }
+      
+      // 这里需要调用有益效果生成的API
+      // 暂时用模拟数据
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setBeneficialEffects(`基于技术方案，本发明具有以下有益效果：\n\n1. 提高了${technicalField || "相关领域"}的技术效率\n2. 改善了用户体验\n3. 降低了实施成本\n4. 增强了系统稳定性`);
+      setProtectionPoints(`技术关键点：\n1. ${inventionName || "本发明"}的核心架构设计\n2. 关键技术模块的创新实现\n3. 数据处理方法的优化\n4. 系统整体协同工作机制`);
+      
+    } catch (error) {
+      alert("生成失败，请稍后重试");
+    } finally {
       setIsGeneratingEffects(false);
-    }, 1500);
+    }
   };
-
-  // Auto-generate effects when entering step 4 (现在改为手动生成，所以注释掉)
-  // useEffect(() => {
-  //   if (step === 4 && !beneficialEffects && !protectionPoints) {
-  //     generateBeneficialEffects();
-  //   }
-  // }, [step]);
 
   // 生成交底书
   const handleGenerateDocument = () => {
@@ -797,16 +831,26 @@ export function DisclosureWorkflow({
                       添加图片
                     </Button>
                   </div>
-                  <Button
-                    onClick={handleAIRewrite}
-                    disabled={isRewriting}
-                    className="gap-2"
-                  >
-                    <Sparkles
-                      className={cn("h-4 w-4", isRewriting && "animate-pulse")}
-                    />
-                    {isRewriting ? "AI 处理中..." : "AI 优化全部"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={extractKeywords}
+                      disabled={isRewriting}
+                      className="gap-2"
+                    >
+                      <BookOpen className={cn("h-4 w-4", isRewriting && "animate-pulse")} />
+                      提取关键词
+                    </Button>
+                    <Button
+                      onClick={handleAIRewrite}
+                      disabled={isRewriting}
+                      className="gap-2"
+                    >
+                      <Sparkles
+                        className={cn("h-4 w-4", isRewriting && "animate-pulse")}
+                      />
+                      {isRewriting ? "AI 处理中..." : "AI 优化全部"}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -911,7 +955,7 @@ export function DisclosureWorkflow({
                 ) : (
                   <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-8 text-center">
                     <p className="text-sm text-muted-foreground">
-                      暂无关键词，点击右上角添加或等待 AI 自动生成
+                      暂无关键词，点击"提取关键词"按钮或等待 AI 自动生成
                     </p>
                   </div>
                 )}

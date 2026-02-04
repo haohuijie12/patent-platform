@@ -29,7 +29,15 @@ export function useDisclosureWorkflow() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // API调用函数
+  // 获取技术方案文本
+  const getTechSolutionText = () => {
+    return contentBlocks
+      .filter(block => block.type === "text")
+      .map(block => block.content)
+      .join("\n");
+  };
+
+  // API调用函数 - 文本优化
   const callOptimizationAPI = async (text: string, blockId?: string) => {
     if (blockId) {
       setOptimizationStatus(prev => ({ ...prev, [blockId]: "loading" }));
@@ -66,6 +74,52 @@ export function useDisclosureWorkflow() {
       }
       alert("AI优化失败，请稍后重试");
       return text;
+    }
+  };
+
+  // API调用函数 - 关键词提取
+  const extractKeywords = async () => {
+    const techSolutionText = getTechSolutionText();
+    if (!techSolutionText.trim()) {
+      alert("请先输入技术方案内容");
+      return false;
+    }
+
+    try {
+      const response = await fetch("/api/disclosure/explanation-of-keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ techSolution: techSolutionText }),
+      });
+
+      if (!response.ok) {
+        throw new Error("关键词提取失败");
+      }
+
+      const result = await response.json();
+      
+      // 合并关键词，避免重复
+      if (result.keywords && Array.isArray(result.keywords)) {
+        setKeywords(prev => {
+          const existingTerms = new Set(prev.map(kw => kw.term));
+          const newKeywords = result.keywords
+            .filter((kw: any) => !existingTerms.has(kw.term))
+            .map((kw: any) => ({
+              term: kw.term,
+              definition: kw.explanation,
+            }));
+          return [...prev, ...newKeywords];
+        });
+        
+        alert(`成功提取 ${result.keywords.length} 个关键词`);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("关键词提取失败:", error);
+      alert("关键词提取失败，请稍后重新点击提取");
+      return false;
     }
   };
 
@@ -117,31 +171,37 @@ export function useDisclosureWorkflow() {
       }
     }
     
-    // 添加关键词
-    if (keywords.length === 0) {
-      setKeywords([
-        { term: "技术方案", definition: "指为解决特定技术问题而采用的技术手段的集合" },
-        { term: "实施例", definition: "指发明创造的具体实现方式" },
-      ]);
-    }
+    // 自动提取关键词
+    await extractKeywords();
     
     setIsRewriting(false);
   };
 
   // 有益效果生成
-  const generateBeneficialEffects = () => {
+  const generateBeneficialEffects = async () => {
     setIsGeneratingEffects(true);
     
-    const techText = contentBlocks
-      .filter(b => b.type === "text")
-      .map(b => b.content)
-      .join(" ");
-    
-    setTimeout(() => {
-      setBeneficialEffects(`基于技术方案，本发明具有以下有益效果：\n\n1. 提高了${technicalField}的技术效率\n2. 改善了用户体验\n3. 降低了实施成本`);
-      setProtectionPoints(`技术关键点：\n1. ${inventionName}的核心架构\n2. 关键技术模块设计\n3. 数据处理方法`);
+    try {
+      // 这里需要调用有益效果生成的API
+      // 暂时用模拟数据
+      const techText = getTechSolutionText();
+      
+      if (!techText.trim()) {
+        alert("请先输入技术方案");
+        return;
+      }
+      
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setBeneficialEffects(`基于技术方案，本发明具有以下有益效果：\n\n1. 提高了${technicalField || "相关领域"}的技术效率\n2. 改善了用户体验\n3. 降低了实施成本\n4. 增强了系统稳定性`);
+      setProtectionPoints(`技术关键点：\n1. ${inventionName || "本发明"}的核心架构设计\n2. 关键技术模块的创新实现\n3. 数据处理方法的优化\n4. 系统整体协同工作机制`);
+      
+    } catch (error) {
+      alert("生成失败，请稍后重试");
+    } finally {
       setIsGeneratingEffects(false);
-    }, 1000);
+    }
   };
 
   // 内容块管理
@@ -197,6 +257,7 @@ export function useDisclosureWorkflow() {
   };
 
   return {
+    // 状态
     step, setStep,
     inventionName, setInventionName,
     contactPerson, setContactPerson,
@@ -224,6 +285,7 @@ export function useDisclosureWorkflow() {
     handleImageUpload,
     handleOptimizeBlock,
     handleAIRewrite,
+    extractKeywords, // 新增的关键词提取方法
     addKeyword,
     updateKeyword,
     deleteKeyword,

@@ -1,3 +1,4 @@
+// types.ts
 export interface ContentBlock {
   id: string;
   type: "text" | "image";
