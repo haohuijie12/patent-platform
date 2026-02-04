@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -59,6 +58,7 @@ export function DisclosureWorkflow({
   // Step 2: 技术背景
   const [techBackground, setTechBackground] = useState("");
   const [isGeneratingBackground, setIsGeneratingBackground] = useState(false);
+  const [existingProblems, setExistingProblems] = useState(""); // 新增：现有技术问题
 
   // Step 3: 技术方案
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
@@ -80,28 +80,93 @@ export function DisclosureWorkflow({
   // Step 5: 预览
   const [documentGenerated, setDocumentGenerated] = useState(false);
 
-  // 生成技术背景
-  const generateTechBackground = () => {
-    if (!inventionName.trim() || !technicalField.trim()) return;
+  // 生成技术背景 - 修改后的版本
+  const generateTechBackground = async (type: "ai" | "refresh") => {
+    if (!inventionName.trim() || !technicalField.trim()) {
+      alert("请先填写发明名称和技术领域");
+      return;
+    }
 
     setIsGeneratingBackground(true);
-    setTimeout(() => {
-      const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
+    
+    // 如果是AI生成，调用API
+    if (type === "ai") {
+      try {
+        // 清空之前的内容
+        setTechBackground("");
+        
+        // 调用我们的API
+        const response = await fetch("/api/disclosure/background-generation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inventionName,
+            technicalField,
+            existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("生成失败");
+        }
+
+        // 处理流式响应
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let generatedText = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            generatedText += chunk;
+            setTechBackground(generatedText);
+          }
+        }
+        
+      } catch (error) {
+        console.error("生成技术背景失败:", error);
+        alert("AI生成失败，请稍后重试");
+        
+        // 如果AI失败，用原来的模拟方法
+        setTimeout(() => {
+          const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
 
 1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
 2. 成本控制困难，现有技术的实施成本较高，难以大规模推广；
 3. 用户体验欠佳，现有产品在操作便捷性和可靠性方面仍有改进空间。
 
 因此，亟需一种新的技术方案来解决上述问题，提高${technicalField}领域的技术水平。`;
-      setTechBackground(background);
-      setIsGeneratingBackground(false);
-    }, 1500);
+          setTechBackground(background);
+        }, 1000);
+      } finally {
+        setIsGeneratingBackground(false);
+      }
+    } 
+    // 如果是重新生成，用简单版本
+    else if (type === "refresh") {
+      setTimeout(() => {
+        const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
+
+1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
+2. 成本控制困难，现有技术的实施成本较高，难以大规模推广；
+3. 用户体验欠佳，现有产品在操作便捷性和可靠性方面仍有改进空间。
+
+因此，亟需一种新的技术方案来解决上述问题，提高${technicalField}领域的技术水平。`;
+        setTechBackground(background);
+        setIsGeneratingBackground(false);
+      }, 1500);
+    }
   };
 
   // Auto-generate background when entering step 2
   useEffect(() => {
     if (step === 2 && !techBackground && inventionName && technicalField) {
-      generateTechBackground();
+      generateTechBackground("refresh");
     }
   }, [step]);
 
@@ -445,37 +510,62 @@ export function DisclosureWorkflow({
                   <h2 className="text-xl font-semibold text-foreground">
                     本发明技术背景
                   </h2>
-                  <Button
-                    variant="outline"
-                    onClick={generateTechBackground}
-                    disabled={isGeneratingBackground}
-                    className="gap-2 bg-transparent"
-                  >
-                    <RefreshCw
-                      className={cn(
-                        "h-4 w-4",
-                        isGeneratingBackground && "animate-spin",
-                      )}
-                    />
-                    重新生成
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => generateTechBackground("ai")}
+                      disabled={isGeneratingBackground}
+                      className="gap-2 bg-transparent"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      AI生成
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => generateTechBackground("refresh")}
+                      disabled={isGeneratingBackground}
+                      className="gap-2 bg-transparent"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "h-4 w-4",
+                          isGeneratingBackground && "animate-spin",
+                        )}
+                      />
+                      重新生成
+                    </Button>
+                  </div>
                 </div>
 
                 <p className="mb-4 text-sm text-muted-foreground">
                   基于发明名称"{inventionName}"和技术领域"{technicalField}
-                  "自动生成，您可以修改以下内容：
+                  "，AI将为您生成专业的技术背景
                 </p>
+
+                {/* 新增：现有技术问题输入框 */}
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium text-foreground">
+                    现有技术问题（可选）
+                  </label>
+                  <textarea
+                    value={existingProblems}
+                    onChange={(e) => setExistingProblems(e.target.value)}
+                    placeholder="请描述现有技术存在的问题..."
+                    rows={3}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
+                  />
+                </div>
 
                 {isGeneratingBackground ? (
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                    <p className="text-muted-foreground">正在生成技术背景...</p>
+                    <p className="text-muted-foreground">AI正在思考...</p>
                   </div>
                 ) : (
                   <textarea
                     value={techBackground}
                     onChange={(e) => setTechBackground(e.target.value)}
-                    placeholder="技术背景内容..."
+                    placeholder="点击'AI生成'按钮开始生成技术背景"
                     rows={12}
                     className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
                   />
