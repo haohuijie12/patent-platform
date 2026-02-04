@@ -17,6 +17,7 @@ import {
   Download,
   RefreshCw,
   BookOpen,
+  Settings,
 } from "lucide-react";
 
 interface DisclosureWorkflowProps {
@@ -58,7 +59,7 @@ export function DisclosureWorkflow({
   // Step 2: 技术背景
   const [techBackground, setTechBackground] = useState("");
   const [isGeneratingBackground, setIsGeneratingBackground] = useState(false);
-  const [existingProblems, setExistingProblems] = useState(""); // 新增：现有技术问题
+  const [existingProblems, setExistingProblems] = useState("");
 
   // Step 3: 技术方案
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
@@ -80,8 +81,14 @@ export function DisclosureWorkflow({
   // Step 5: 预览
   const [documentGenerated, setDocumentGenerated] = useState(false);
 
-  // 生成技术背景 - 修改后的版本
-  const generateTechBackground = async (type: "ai" | "refresh") => {
+  // 新增：优化相关状态
+  const [optimizationType, setOptimizationType] = useState<string>("standard");
+  const [optimizationStatus, setOptimizationStatus] = useState<{
+    [key: string]: "idle" | "loading" | "success" | "error";
+  }>({});
+
+  // 生成技术背景
+  const generateTechBackground = async () => {
     if (!inventionName.trim() || !technicalField.trim()) {
       alert("请先填写发明名称和技术领域");
       return;
@@ -89,86 +96,54 @@ export function DisclosureWorkflow({
 
     setIsGeneratingBackground(true);
     
-    // 如果是AI生成，调用API
-    if (type === "ai") {
-      try {
-        // 清空之前的内容
-        setTechBackground("");
-        
-        // 调用我们的API
-        const response = await fetch("/api/disclosure/background-generation", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inventionName,
-            technicalField,
-            existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
-          }),
-        });
+    try {
+      setTechBackground("");
+      
+      const response = await fetch("/api/disclosure/background-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inventionName,
+          technicalField,
+          existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error("生成失败");
-        }
-
-        // 处理流式响应
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let generatedText = "";
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            const chunk = decoder.decode(value);
-            generatedText += chunk;
-            setTechBackground(generatedText);
-          }
-        }
-        
-      } catch (error) {
-        console.error("生成技术背景失败:", error);
-        alert("AI生成失败，请稍后重试");
-        
-        // 如果AI失败，用原来的模拟方法
-        setTimeout(() => {
-          const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
-
-1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
-2. 成本控制困难，现有技术的实施成本较高，难以大规模推广；
-3. 用户体验欠佳，现有产品在操作便捷性和可靠性方面仍有改进空间。
-
-因此，亟需一种新的技术方案来解决上述问题，提高${technicalField}领域的技术水平。`;
-          setTechBackground(background);
-        }, 1000);
-      } finally {
-        setIsGeneratingBackground(false);
+      if (!response.ok) {
+        throw new Error("生成失败");
       }
-    } 
-    // 如果是重新生成，用简单版本
-    else if (type === "refresh") {
-      setTimeout(() => {
-        const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
 
-1. 技术效率有待提升，现有方案在处理复杂场景时性能不足；
-2. 成本控制困难，现有技术的实施成本较高，难以大规模推广；
-3. 用户体验欠佳，现有产品在操作便捷性和可靠性方面仍有改进空间。
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let generatedText = "";
 
-因此，亟需一种新的技术方案来解决上述问题，提高${technicalField}领域的技术水平。`;
-        setTechBackground(background);
-        setIsGeneratingBackground(false);
-      }, 1500);
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          generatedText += chunk;
+          setTechBackground(generatedText);
+        }
+      }
+      
+    } catch (error) {
+      console.error("生成技术背景失败:", error);
+      alert("AI生成失败，请稍后重新点击生成按钮");
+    } finally {
+      setIsGeneratingBackground(false);
     }
   };
 
-  // Auto-generate background when entering step 2
-  useEffect(() => {
-    if (step === 2 && !techBackground && inventionName && technicalField) {
-      generateTechBackground("refresh");
-    }
-  }, [step]);
+  // Auto-generate background when entering step 2 (现在改为手动生成，所以注释掉)
+  // useEffect(() => {
+  //   if (step === 2 && !techBackground && inventionName && technicalField) {
+  //     generateTechBackground();
+  //   }
+  // }, [step]);
 
   // 添加内容块
   const addContentBlock = (type: "text" | "image") => {
@@ -214,46 +189,121 @@ export function DisclosureWorkflow({
     }
   };
 
-  // 单个文本块 AI 优化
-  const handleOptimizeBlock = (id: string) => {
+  // 单个文本块 AI 优化 - 调用真实API
+  const handleOptimizeBlock = async (id: string, content: string) => {
+    if (!content.trim()) {
+      alert("请先输入要优化的内容");
+      return;
+    }
+
     setOptimizingBlockId(id);
-    setTimeout(() => {
-      setContentBlocks((prev) =>
+    setOptimizationStatus(prev => ({
+      ...prev,
+      [id]: "loading"
+    }));
+
+    try {
+      const response = await fetch("/api/disclosure/proposal-text-optimization", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: content,
+          optimizationType: optimizationType || "standard",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`优化失败: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let optimizedText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          optimizedText += chunk;
+        }
+      }
+
+      // 更新文本块内容
+      setContentBlocks(prev =>
         prev.map((block) => {
           if (block.id === id && block.type === "text") {
             return {
               ...block,
-              content: `${block.content}\n\n[已优化] 上述技术方案通过创新性的设计，有效解决了现有技术中的关键问题。`,
+              content: optimizedText,
             };
           }
           return block;
-        }),
+        })
       );
+
+      setOptimizationStatus(prev => ({
+        ...prev,
+        [id]: "success"
+      }));
+
+    } catch (error) {
+      console.error("文本块优化失败:", error);
+      setOptimizationStatus(prev => ({
+        ...prev,
+        [id]: "error"
+      }));
+      alert("文本优化失败，请稍后重新点击优化按钮");
+    } finally {
       setOptimizingBlockId(null);
-    }, 1500);
+    }
   };
 
   // AI 风格化改写
-  const handleAIRewrite = () => {
+  const handleAIRewrite = async () => {
+    // 收集所有文本块内容
+    const textBlocks = contentBlocks
+      .filter((b) => b.type === "text" && b.content.trim())
+      .map((b) => ({ id: b.id, content: b.content }));
+
+    if (textBlocks.length === 0) {
+      alert("请先输入技术方案内容");
+      return;
+    }
+
     setIsRewriting(true);
-    setTimeout(() => {
-      // 模拟 AI 改写 - 移除文本内容的重复优化，保留关键词生成和警告检查
+
+    try {
+      // 逐个优化文本块
+      for (const block of textBlocks) {
+        await handleOptimizeBlock(block.id, block.content);
+      }
+
       // 模拟识别专有词汇
-      setKeywords([
+      const suggestedKeywords = [
         {
           term: "技术方案",
           definition: "指为解决特定技术问题而采用的技术手段的集合",
         },
         { term: "实施例", definition: "指发明创造的具体实现方式" },
         { term: "权利要求", definition: "指专利申请人请求专利保护的技术范围" },
-      ]);
+      ];
 
-      // 模拟 AI 检测问题
+      // 合并已有关键词和新关键词
+      const mergedKeywords = [...keywords];
+      suggestedKeywords.forEach((newKw) => {
+        if (!mergedKeywords.some((kw) => kw.term === newKw.term)) {
+          mergedKeywords.push(newKw);
+        }
+      });
+      setKeywords(mergedKeywords);
+
+      // AI检测问题
       const warnings: AIWarning[] = [];
-      const totalText = contentBlocks
-        .filter((b) => b.type === "text")
-        .map((b) => b.content)
-        .join("");
+      const totalText = textBlocks.map((b) => b.content).join("");
 
       if (totalText.length < 100) {
         warnings.push({
@@ -278,8 +328,12 @@ export function DisclosureWorkflow({
       }
 
       setAIWarnings(warnings);
+    } catch (error) {
+      console.error("AI优化失败:", error);
+      alert("AI优化失败，请稍后重试");
+    } finally {
       setIsRewriting(false);
-    }, 2000);
+    }
   };
 
   // 关键词管理
@@ -323,25 +377,17 @@ export function DisclosureWorkflow({
     }, 1500);
   };
 
-  // Auto-generate effects when entering step 4
-  useEffect(() => {
-    if (step === 4 && !beneficialEffects && !protectionPoints) {
-      generateBeneficialEffects();
-    }
-  }, [step]);
+  // Auto-generate effects when entering step 4 (现在改为手动生成，所以注释掉)
+  // useEffect(() => {
+  //   if (step === 4 && !beneficialEffects && !protectionPoints) {
+  //     generateBeneficialEffects();
+  //   }
+  // }, [step]);
 
   // 生成交底书
   const handleGenerateDocument = () => {
     setStep(5);
     setDocumentGenerated(true);
-  };
-
-  // 获取技术方案纯文本
-  const getTechnicalSolutionText = () => {
-    return contentBlocks
-      .filter((b) => b.type === "text")
-      .map((b) => b.content)
-      .join("\n\n");
   };
 
   return (
@@ -424,7 +470,6 @@ export function DisclosureWorkflow({
                 </h2>
 
                 <div className="space-y-6">
-                  {/* 发明名称 */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-foreground">
                       发明名称 *
@@ -438,7 +483,6 @@ export function DisclosureWorkflow({
                     />
                   </div>
 
-                  {/* 联系人与申请类型 */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="mb-2 block text-sm font-medium text-foreground">
@@ -479,7 +523,6 @@ export function DisclosureWorkflow({
                     </div>
                   </div>
 
-                  {/* 技术领域 */}
                   <div>
                     <label className="mb-2 block text-sm font-medium text-foreground">
                       技术领域 *
@@ -513,7 +556,7 @@ export function DisclosureWorkflow({
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => generateTechBackground("ai")}
+                      onClick={() => generateTechBackground()}
                       disabled={isGeneratingBackground}
                       className="gap-2 bg-transparent"
                     >
@@ -522,7 +565,7 @@ export function DisclosureWorkflow({
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => generateTechBackground("refresh")}
+                      onClick={() => generateTechBackground()}
                       disabled={isGeneratingBackground}
                       className="gap-2 bg-transparent"
                     >
@@ -542,7 +585,6 @@ export function DisclosureWorkflow({
                   "，AI将为您生成专业的技术背景
                 </p>
 
-                {/* 新增：现有技术问题输入框 */}
                 <div className="mb-4">
                   <label className="mb-2 block text-sm font-medium text-foreground">
                     现有技术问题（可选）
@@ -577,6 +619,48 @@ export function DisclosureWorkflow({
           {/* Step 3: 技术方案 */}
           {step === 3 && (
             <div className="space-y-6">
+              {/* 优化类型选择器 */}
+              <div className="rounded-lg border border-border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">优化设置</h3>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <label className="mb-2 block text-sm font-medium text-foreground">
+                    优化类型
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { value: "standard", label: "标准优化", desc: "平衡专业性和可读性" },
+                      { value: "detailed", label: "详细优化", desc: "增加技术细节和实施方式" },
+                      { value: "concise", label: "简明优化", desc: "提炼核心，简洁表达" },
+                      { value: "legal", label: "法律优化", desc: "强化法律保护角度表述" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setOptimizationType(option.value)}
+                        className={cn(
+                          "rounded-lg border p-3 text-left transition-colors",
+                          optimizationType === option.value
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary"
+                        )}
+                      >
+                        <div className="font-medium text-foreground">
+                          {option.label}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {option.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-lg border border-border bg-card p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-foreground">
@@ -589,7 +673,6 @@ export function DisclosureWorkflow({
                   将帮助您优化表述并识别专有词汇。
                 </p>
 
-                {/* 内容块列表 */}
                 <div className="space-y-4">
                   {contentBlocks.map((block, index) => (
                     <div
@@ -623,19 +706,37 @@ export function DisclosureWorkflow({
                             rows={6}
                             className="w-full resize-none rounded border border-border bg-background px-3 py-2 pb-14 text-sm text-foreground outline-none transition-colors focus:border-primary"
                           />
-                          <div className="absolute bottom-4 right-2">
+                          <div className="absolute bottom-4 right-2 flex items-center gap-2">
+                            {optimizationStatus[block.id] === "loading" && (
+                              <div className="flex items-center gap-1 text-xs text-blue-500">
+                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                                优化中...
+                              </div>
+                            )}
+                            {optimizationStatus[block.id] === "success" && (
+                              <div className="flex items-center gap-1 text-xs text-green-500">
+                                <CheckCircle className="h-3 w-3" />
+                                已优化
+                              </div>
+                            )}
+                            {optimizationStatus[block.id] === "error" && (
+                              <div className="flex items-center gap-1 text-xs text-red-500">
+                                <AlertTriangle className="h-3 w-3" />
+                                失败
+                              </div>
+                            )}
+                            
                             <Button
                               size="sm"
                               variant="secondary"
                               className="h-7 gap-1 text-xs"
-                              onClick={() => handleOptimizeBlock(block.id)}
-                              disabled={optimizingBlockId === block.id}
+                              onClick={() => handleOptimizeBlock(block.id, block.content)}
+                              disabled={optimizingBlockId === block.id || !block.content.trim()}
                             >
                               <Sparkles
                                 className={cn(
                                   "h-3 w-3",
-                                  optimizingBlockId === block.id &&
-                                    "animate-pulse",
+                                  optimizingBlockId === block.id && "animate-pulse",
                                 )}
                               />
                               {optimizingBlockId === block.id
@@ -677,7 +778,6 @@ export function DisclosureWorkflow({
                   ))}
                 </div>
 
-                {/* 添加内容块按钮 */}
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex gap-2">
                     <Button
@@ -705,12 +805,11 @@ export function DisclosureWorkflow({
                     <Sparkles
                       className={cn("h-4 w-4", isRewriting && "animate-pulse")}
                     />
-                    {isRewriting ? "AI 处理中..." : "AI 优化"}
+                    {isRewriting ? "AI 处理中..." : "AI 优化全部"}
                   </Button>
                 </div>
               </div>
 
-              {/* AI 警告提示 */}
               {aiWarnings.length > 0 && (
                 <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
                   <div className="mb-2 flex items-center gap-2">
@@ -733,7 +832,6 @@ export function DisclosureWorkflow({
                 </div>
               )}
 
-              {/* 关键词表 */}
               <div className="rounded-lg border border-border bg-card p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -835,41 +933,48 @@ export function DisclosureWorkflow({
                 </div>
               ) : (
                 <>
-                  {/* 有益效果 */}
                   <div className="rounded-lg border border-border bg-card p-6">
-                    <h2 className="mb-4 text-xl font-semibold text-foreground">
-                      本发明技术方案带来的有益效果
-                    </h2>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-xl font-semibold text-foreground">
+                        本发明技术方案带来的有益效果
+                      </h2>
+                      <Button
+                        variant="outline"
+                        onClick={generateBeneficialEffects}
+                        disabled={isGeneratingEffects}
+                        className="gap-2 bg-transparent"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        AI生成
+                      </Button>
+                    </div>
                     <p className="mb-4 text-sm text-muted-foreground">
-                      AI 已基于技术背景和技术方案自动生成，您可以修改以下内容：
+                      基于技术背景和技术方案，AI将为您生成有益效果
                     </p>
                     <textarea
                       value={beneficialEffects}
                       onChange={(e) => setBeneficialEffects(e.target.value)}
-                      placeholder="请描述本发明的有益效果..."
+                      placeholder="点击'AI生成'按钮开始生成有益效果"
                       rows={8}
                       className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
                     />
                   </div>
 
-                  {/* 技术关键点与保护点 */}
                   <div className="rounded-lg border border-border bg-card p-6">
                     <h2 className="mb-4 text-xl font-semibold text-foreground">
                       本发明的技术关键点和欲保护点
                     </h2>
                     <p className="mb-4 text-sm text-muted-foreground">
-                      AI 已基于技术方案自动识别关键点，您可以修改以下内容：
+                      AI已基于技术方案自动识别关键点
                     </p>
                     <textarea
                       value={protectionPoints}
                       onChange={(e) => setProtectionPoints(e.target.value)}
-                      placeholder="请描述本发明的技术关键点和欲保护点..."
+                      placeholder="点击上方'AI生成'按钮后会自动生成"
                       rows={8}
                       className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"
                     />
                   </div>
-
-                  {/* 生成交底书按钮 */}
                 </>
               )}
             </div>
@@ -886,7 +991,6 @@ export function DisclosureWorkflow({
                 </div>
 
                 <div className="space-y-6">
-                  {/* 1. 基本信息 */}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <h3 className="mb-3 font-semibold text-foreground">
                       一、基本信息
@@ -917,7 +1021,6 @@ export function DisclosureWorkflow({
                     </div>
                   </div>
 
-                  {/* 2. 技术背景 */}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <h3 className="mb-3 font-semibold text-foreground">
                       二、本发明技术背景
@@ -927,7 +1030,6 @@ export function DisclosureWorkflow({
                     </div>
                   </div>
 
-                  {/* 3. 技术方案 */}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <h3 className="mb-3 font-semibold text-foreground">
                       三、本发明的技术方案
@@ -955,7 +1057,6 @@ export function DisclosureWorkflow({
                       ))}
                     </div>
 
-                    {/* 关键词表 */}
                     {keywords.length > 0 && (
                       <div className="mt-6">
                         <h4 className="mb-2 text-sm font-medium text-foreground">
@@ -992,7 +1093,6 @@ export function DisclosureWorkflow({
                     )}
                   </div>
 
-                  {/* 4. 有益效果 */}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <h3 className="mb-3 font-semibold text-foreground">
                       四、本发明技术方案带来的有益效果
@@ -1002,7 +1102,6 @@ export function DisclosureWorkflow({
                     </div>
                   </div>
 
-                  {/* 5. 保护点 */}
                   <div className="rounded-lg border border-border bg-background p-4">
                     <h3 className="mb-3 font-semibold text-foreground">
                       五、本发明的技术关键点和欲保护点
