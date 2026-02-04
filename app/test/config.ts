@@ -1,4 +1,13 @@
-import { FileText, Search, Type, FileOutput, FileSearch, Tag, Sparkles, Image } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Type,
+  FileOutput,
+  FileSearch,
+  Tag,
+  Sparkles,
+  Image,
+} from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -12,11 +21,6 @@ export const testConfig: TestMenuItem[] = [
     title: "专利交底书",
     icon: FileText,
     items: [
-      {
-        title: "交底书模板导出",
-        url: "/test/disclosure/template-export",
-        icon: FileOutput,
-      },
       {
         title: "技术背景生成",
         url: "/test/disclosure/background-generation",
@@ -33,6 +37,11 @@ export const testConfig: TestMenuItem[] = [
         icon: Search,
       },
       {
+        title: "图片检测",
+        url: "/test/disclosure/image-detection",
+        icon: Image,
+      },
+      {
         title: "有益效果生成",
         url: "/test/disclosure/beneficial-effect-generation",
         icon: Sparkles,
@@ -43,9 +52,9 @@ export const testConfig: TestMenuItem[] = [
         icon: Sparkles,
       },
       {
-        title: "图片检测",
-        url: "/test/disclosure/image-detection",
-        icon: Image,
+        title: "交底书模板导出",
+        url: "/test/disclosure/template-export",
+        icon: FileOutput,
       },
     ],
   },

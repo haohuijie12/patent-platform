@@ -88,13 +88,13 @@ export function DisclosureWorkflow({
     }
 
     setIsGeneratingBackground(true);
-    
+
     // 如果是AI生成，调用API
     if (type === "ai") {
       try {
         // 清空之前的内容
         setTechBackground("");
-        
+
         // 调用我们的API
         const response = await fetch("/api/disclosure/background-generation", {
           method: "POST",
@@ -104,7 +104,8 @@ export function DisclosureWorkflow({
           body: JSON.stringify({
             inventionName,
             technicalField,
-            existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
+            existingProblems:
+              existingProblems || "（未提供具体问题，请根据通用情况分析）",
           }),
         });
 
@@ -121,17 +122,16 @@ export function DisclosureWorkflow({
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             const chunk = decoder.decode(value);
             generatedText += chunk;
             setTechBackground(generatedText);
           }
         }
-        
       } catch (error) {
         console.error("生成技术背景失败:", error);
         alert("AI生成失败，请稍后重试");
-        
+
         // 如果AI失败，用原来的模拟方法
         setTimeout(() => {
           const background = `随着${technicalField}技术的快速发展，相关领域对${inventionName}的需求日益增长。现有技术中，虽然已有多种解决方案，但仍存在以下问题：
@@ -146,7 +146,7 @@ export function DisclosureWorkflow({
       } finally {
         setIsGeneratingBackground(false);
       }
-    } 
+    }
     // 如果是重新生成，用简单版本
     else if (type === "refresh") {
       setTimeout(() => {

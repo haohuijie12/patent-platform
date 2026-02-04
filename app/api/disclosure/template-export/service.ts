@@ -13,7 +13,9 @@ export interface DisclosureData {
   protectionPoints?: string;
 }
 
-export async function generateDisclosureDocumentFromTemplate(data: DisclosureData): Promise<Buffer> {
+export async function generateDisclosureDocumentFromTemplate(
+  data: DisclosureData,
+): Promise<Buffer> {
   const {
     inventionName,
     contactPerson = "",
@@ -50,23 +52,36 @@ export async function generateDisclosureDocumentFromTemplate(data: DisclosureDat
   }
 
   const wingdingsMatches = [];
-  let matchIndex = documentXml.indexOf('<w:sym w:font="Wingdings" w:char="00A8"/>');
+  let matchIndex = documentXml.indexOf(
+    '<w:sym w:font="Wingdings" w:char="00A8"/>',
+  );
   while (matchIndex !== -1) {
     wingdingsMatches.push(matchIndex);
-    matchIndex = documentXml.indexOf('<w:sym w:font="Wingdings" w:char="00A8"/>', matchIndex + 1);
+    matchIndex = documentXml.indexOf(
+      '<w:sym w:font="Wingdings" w:char="00A8"/>',
+      matchIndex + 1,
+    );
   }
 
   if (wingdingsMatches.length >= 2) {
     if (applicationType === "发明") {
       const firstCheckboxStart = wingdingsMatches[0];
-      documentXml = documentXml.substring(0, firstCheckboxStart) + 
-                   '<w:sym w:font="Wingdings" w:char="F0FE"/>' + 
-                   documentXml.substring(firstCheckboxStart + '<w:sym w:font="Wingdings" w:char="00A8"/>'.length);
+      documentXml =
+        documentXml.substring(0, firstCheckboxStart) +
+        '<w:sym w:font="Wingdings" w:char="F0FE"/>' +
+        documentXml.substring(
+          firstCheckboxStart +
+            '<w:sym w:font="Wingdings" w:char="00A8"/>'.length,
+        );
     } else if (applicationType === "实用新型") {
       const secondCheckboxStart = wingdingsMatches[1];
-      documentXml = documentXml.substring(0, secondCheckboxStart) + 
-                   '<w:sym w:font="Wingdings" w:char="F0FE"/>' + 
-                   documentXml.substring(secondCheckboxStart + '<w:sym w:font="Wingdings" w:char="00A8"/>'.length);
+      documentXml =
+        documentXml.substring(0, secondCheckboxStart) +
+        '<w:sym w:font="Wingdings" w:char="F0FE"/>' +
+        documentXml.substring(
+          secondCheckboxStart +
+            '<w:sym w:font="Wingdings" w:char="00A8"/>'.length,
+        );
     }
   }
 
@@ -80,11 +95,13 @@ function convertToWordFormat(text: string): string {
   if (lines.length === 1) {
     return `<w:t>${escapeXml(lines[0])}</w:t>`;
   }
-  
-  return lines.map((line, index) => {
-    const content = index === 0 ? line : `　　${line}`;
-    return `<w:t>${escapeXml(content)}</w:t>`;
-  }).join('<w:br/>');
+
+  return lines
+    .map((line, index) => {
+      const content = index === 0 ? line : `　　${line}`;
+      return `<w:t>${escapeXml(content)}</w:t>`;
+    })
+    .join("<w:br/>");
 }
 
 function escapeXml(text: string): string {

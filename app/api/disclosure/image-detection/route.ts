@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
 
     if (!imageUrl) {
       console.warn("缺少图片数据");
-      return NextResponse.json({ error: "图片数据(imageUrl)是必需的" }, { status: 400 });
+      return NextResponse.json(
+        { error: "图片数据(imageUrl)是必需的" },
+        { status: 400 },
+      );
     }
 
     const result = await detectImageProperties({

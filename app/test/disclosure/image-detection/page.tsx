@@ -10,7 +10,17 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Eraser, Upload, X, Plus, Image as ImageIcon, Loader2, CheckCircle2, XCircle, Play } from "lucide-react";
+import {
+  Eraser,
+  Upload,
+  X,
+  Plus,
+  Image as ImageIcon,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Play,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface DetectionResult {
@@ -70,7 +80,7 @@ export default function ImageDetectionPage() {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 11),
       url: URL.createObjectURL(file),
       file: file,
-      status: "pending"
+      status: "pending",
     }));
     setImageItems((prev) => [...prev, ...newItems]);
   };
@@ -97,7 +107,11 @@ export default function ImageDetectionPage() {
       const file = files[0];
       const url = URL.createObjectURL(file);
       setImageItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, url, file, status: "pending", result: undefined } : item))
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, url, file, status: "pending", result: undefined }
+            : item,
+        ),
       );
     }
   };
@@ -113,7 +127,9 @@ export default function ImageDetectionPage() {
   };
 
   const handleStartDetection = async () => {
-    const validItems = imageItems.filter((item) => item.url !== null && item.file);
+    const validItems = imageItems.filter(
+      (item) => item.url !== null && item.file,
+    );
 
     if (validItems.length === 0) {
       toast.error("缺少必要信息", {
@@ -122,141 +138,197 @@ export default function ImageDetectionPage() {
       return;
     }
 
-    const pendingItems = validItems.filter(item => item.status !== "done" && item.status !== "analyzing");
+    const pendingItems = validItems.filter(
+      (item) => item.status !== "done" && item.status !== "analyzing",
+    );
     if (pendingItems.length === 0) {
-        toast.info("所有图片已完成检测");
-        return;
+      toast.info("所有图片已完成检测");
+      return;
     }
 
     setIsAnalyzing(true);
-    
+
     // 更新状态为 analyzing
-    setImageItems(prev => prev.map(item => 
-        (item.url && item.file && item.status !== "done") 
-          ? { ...item, status: "analyzing" } 
-          : item
-    ));
+    setImageItems((prev) =>
+      prev.map((item) =>
+        item.url && item.file && item.status !== "done"
+          ? { ...item, status: "analyzing" }
+          : item,
+      ),
+    );
 
     try {
-        await Promise.all(pendingItems.map(async (item) => {
-            try {
-                // Convert file to base64
-                const base64 = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(item.file!);
-                });
+      await Promise.all(
+        pendingItems.map(async (item) => {
+          try {
+            // Convert file to base64
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(item.file!);
+            });
 
-                const response = await fetch("/api/disclosure/image-detection", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ imageUrl: base64 }),
-                });
+            const response = await fetch("/api/disclosure/image-detection", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrl: base64 }),
+            });
 
-                if (!response.ok) throw new Error("API Error");
+            if (!response.ok) throw new Error("API Error");
 
-                const result = await response.json();
-                
-                setImageItems(prev => prev.map(prevItem => 
-                    prevItem.id === item.id ? { ...prevItem, status: "done", result } : prevItem
-                ));
-            } catch (error) {
-                console.error(`Error processing image ${item.id}:`, error);
-                setImageItems(prev => prev.map(prevItem => 
-                    prevItem.id === item.id ? { ...prevItem, status: "error" } : prevItem
-                ));
-            }
-        }));
-        toast.success("检测完成");
+            const result = await response.json();
+
+            setImageItems((prev) =>
+              prev.map((prevItem) =>
+                prevItem.id === item.id
+                  ? { ...prevItem, status: "done", result }
+                  : prevItem,
+              ),
+            );
+          } catch (error) {
+            console.error(`Error processing image ${item.id}:`, error);
+            setImageItems((prev) =>
+              prev.map((prevItem) =>
+                prevItem.id === item.id
+                  ? { ...prevItem, status: "error" }
+                  : prevItem,
+              ),
+            );
+          }
+        }),
+      );
+      toast.success("检测完成");
     } catch (error) {
-        console.error("Batch detection error:", error);
-        toast.error("检测过程中发生错误");
+      console.error("Batch detection error:", error);
+      toast.error("检测过程中发生错误");
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   };
 
   const renderCompletion = () => {
-    const hasResults = imageItems.some(item => item.status === "done" || item.status === "error" || item.status === "analyzing");
+    const hasResults = imageItems.some(
+      (item) =>
+        item.status === "done" ||
+        item.status === "error" ||
+        item.status === "analyzing",
+    );
 
     if (!hasResults && imageItems.length === 0) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-                <p>请上传图片并点击“开始检测”</p>
-            </div>
-        );
+      return (
+        <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+          <p>请上传图片并点击“开始检测”</p>
+        </div>
+      );
     }
-    
+
     if (!hasResults) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
-                <p>暂无检测结果</p>
-            </div>
-        );
+      return (
+        <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+          <p>暂无检测结果</p>
+        </div>
+      );
     }
 
     return (
-        <div className="overflow-hidden rounded border border-border">
-            <table className="w-full text-sm table-fixed">
-                <thead className="bg-accent/50">
-                    <tr>
-                        <th className="border-b border-border px-3 py-1.5 text-left font-medium w-[80px]">图片序号</th>
-                        <th className="border-b border-border px-3 py-1.5 text-left font-medium w-[100px]">状态</th>
-                        <th className="border-b border-border px-3 py-1.5 text-left font-medium">检测详情</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {imageItems.map((item, index) => (
-                        <tr key={item.id} className="border-b border-border last:border-0">
-                            <td className="px-3 py-1.5 align-top font-medium truncate">
-                                图片 {index + 1}
-                            </td>
-                            <td className="px-3 py-1.5 align-top">
-                                {item.status === "pending" && <span className="text-muted-foreground">待检测</span>}
-                                {item.status === "analyzing" && (
-                                    <span className="flex items-center text-blue-600">
-                                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                                        检测中
-                                    </span>
-                                )}
-                                {item.status === "error" && <span className="text-destructive">错误</span>}
-                                {item.status === "done" && item.result && (
-                                    <span className={cn("flex items-center font-medium", item.result.pass ? "text-green-600" : "text-destructive")}>
-                                        {item.result.pass ? (
-                                            <><CheckCircle2 className="w-4 h-4 mr-1" /> 通过</>
-                                        ) : (
-                                            <><XCircle className="w-4 h-4 mr-1" /> 未通过</>
-                                        )}
-                                    </span>
-                                )}
-                            </td>
-                            <td className="px-3 py-1.5 align-top">
-                                {item.status === "done" && item.result ? (
-                                    <div className="text-xs space-y-1">
-                                        <div className="flex gap-2">
-                                            <span className={item.result.isWhiteBackground ? "text-green-600" : "text-destructive"}>
-                                                背景纯白: {item.result.isWhiteBackground ? "是" : "否"}
-                                            </span>
-                                            <span className={item.result.isBlackLines ? "text-green-600" : "text-destructive"}>
-                                                线条纯黑: {item.result.isBlackLines ? "是" : "否"}
-                                            </span>
-                                        </div>
-                                        {!item.result.pass && item.result.reason && (
-                                            <p className="text-muted-foreground bg-muted/50 p-1 rounded mt-1">
-                                                {item.result.reason}
-                                            </p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+      <div className="overflow-hidden rounded border border-border">
+        <table className="w-full text-sm table-fixed">
+          <thead className="bg-accent/50">
+            <tr>
+              <th className="border-b border-border px-3 py-1.5 text-left font-medium w-[80px]">
+                图片序号
+              </th>
+              <th className="border-b border-border px-3 py-1.5 text-left font-medium w-[100px]">
+                状态
+              </th>
+              <th className="border-b border-border px-3 py-1.5 text-left font-medium">
+                检测详情
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {imageItems.map((item, index) => (
+              <tr
+                key={item.id}
+                className="border-b border-border last:border-0"
+              >
+                <td className="px-3 py-1.5 align-top font-medium truncate">
+                  图片 {index + 1}
+                </td>
+                <td className="px-3 py-1.5 align-top">
+                  {item.status === "pending" && (
+                    <span className="text-muted-foreground">待检测</span>
+                  )}
+                  {item.status === "analyzing" && (
+                    <span className="flex items-center text-blue-600">
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      检测中
+                    </span>
+                  )}
+                  {item.status === "error" && (
+                    <span className="text-destructive">错误</span>
+                  )}
+                  {item.status === "done" && item.result && (
+                    <span
+                      className={cn(
+                        "flex items-center font-medium",
+                        item.result.pass
+                          ? "text-green-600"
+                          : "text-destructive",
+                      )}
+                    >
+                      {item.result.pass ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> 通过
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 mr-1" /> 未通过
+                        </>
+                      )}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 align-top">
+                  {item.status === "done" && item.result ? (
+                    <div className="text-xs space-y-1">
+                      <div className="flex gap-2">
+                        <span
+                          className={
+                            item.result.isWhiteBackground
+                              ? "text-green-600"
+                              : "text-destructive"
+                          }
+                        >
+                          背景纯白:{" "}
+                          {item.result.isWhiteBackground ? "是" : "否"}
+                        </span>
+                        <span
+                          className={
+                            item.result.isBlackLines
+                              ? "text-green-600"
+                              : "text-destructive"
+                          }
+                        >
+                          线条纯黑: {item.result.isBlackLines ? "是" : "否"}
+                        </span>
+                      </div>
+                      {!item.result.pass && item.result.reason && (
+                        <p className="text-muted-foreground bg-muted/50 p-1 rounded mt-1">
+                          {item.result.reason}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
@@ -286,10 +358,11 @@ export default function ImageDetectionPage() {
           </CardHeader>
           <CardContent className="space-y-4 flex-1 flex flex-col overflow-hidden p-6 pt-0">
             <div className="space-y-4 flex flex-col flex-1 min-h-0">
-              <div 
+              <div
                 className={cn(
                   "flex-1 overflow-y-auto pr-2 space-y-4 rounded-lg transition-colors relative",
-                  isDragging && "bg-primary/5 border-2 border-dashed border-primary"
+                  isDragging &&
+                    "bg-primary/5 border-2 border-dashed border-primary",
                 )}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -355,12 +428,12 @@ export default function ImageDetectionPage() {
                     </div>
                   </div>
                 ))}
-                
+
                 {imageItems.length === 0 && (
-                  <div 
+                  <div
                     className={cn(
                       "flex flex-col items-center justify-center h-full min-h-[300px] border-2 border-dashed rounded-lg cursor-pointer transition-colors bg-muted/5 hover:bg-muted/10 hover:border-primary/50",
-                      isDragging && "border-primary bg-primary/10"
+                      isDragging && "border-primary bg-primary/10",
                     )}
                     onClick={() => batchInputRef.current?.click()}
                   >
@@ -377,13 +450,14 @@ export default function ImageDetectionPage() {
                 )}
 
                 {imageItems.length > 0 && (
-                   <div className="pt-2">
+                  <div className="pt-2">
                     <button
                       onClick={handleAddImageCard}
                       disabled={isAnalyzing}
                       className={cn(
                         "flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-accent/30 py-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-accent/50 hover:text-foreground",
-                        isAnalyzing && "opacity-50 cursor-not-allowed hover:border-border hover:bg-accent/30 hover:text-muted-foreground"
+                        isAnalyzing &&
+                          "opacity-50 cursor-not-allowed hover:border-border hover:bg-accent/30 hover:text-muted-foreground",
                       )}
                     >
                       <Plus className="h-4 w-4" />
@@ -392,13 +466,13 @@ export default function ImageDetectionPage() {
                   </div>
                 )}
               </div>
-              
+
               <p className="text-xs text-muted-foreground pt-1">
                 提示：支持上传多张图片，AI 将对图片进行检测分析。
               </p>
 
-              <Button 
-                onClick={handleStartDetection} 
+              <Button
+                onClick={handleStartDetection}
                 className="w-full"
                 disabled={isAnalyzing || imageItems.length === 0}
               >
@@ -427,7 +501,7 @@ export default function ImageDetectionPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto p-6 pt-0">
-             {renderCompletion()}
+            {renderCompletion()}
           </CardContent>
         </Card>
       </div>

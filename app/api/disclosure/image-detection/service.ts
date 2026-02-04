@@ -18,7 +18,7 @@ const IMAGE_DETECTION_SYSTEM_PROMPT = `你是一个专业的专利图片审查�
 
 // 创建 OpenAI Compatible 模型实例 (Vision)
 const model = new ChatOpenAI({
-  modelName: process.env.OPENAI_VISION_MODEL || "gpt-4o",
+  modelName: process.env.OPENAI_VISION_MODEL,
   temperature: 0.1,
   openAIApiKey: process.env.OPENAI_API_KEY,
   configuration: {
