@@ -63,9 +63,7 @@ export function Step4Benefits({
         {isGeneratingEffects ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <p className="text-muted-foreground">
-              正在生成有益效果与保护点...
-            </p>
+            <p className="text-muted-foreground">正在生成有益效果与保护点...</p>
           </div>
         ) : (
           <textarea

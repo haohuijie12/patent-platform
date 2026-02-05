@@ -78,8 +78,8 @@ export function DisclosureWorkflow({
   // 获取技术方案文本
   const getTechSolutionText = () => {
     return contentBlocks
-      .filter(block => block.type === "text")
-      .map(block => block.content)
+      .filter((block) => block.type === "text")
+      .map((block) => block.content)
       .join("\n");
   };
 
@@ -207,7 +207,7 @@ export function DisclosureWorkflow({
       );
       
       // 更新文本块内容
-      setContentBlocks(prev =>
+      setContentBlocks((prev) =>
         prev.map((block) => {
           if (block.id === id && block.type === "text") {
             return {
@@ -216,7 +216,7 @@ export function DisclosureWorkflow({
             };
           }
           return block;
-        })
+        }),
       );
 
     } catch (error) {
@@ -248,11 +248,11 @@ export function DisclosureWorkflow({
       }
 
       const result = await response.json();
-      
+
       // 合并关键词，避免重复
       if (result.keywords && Array.isArray(result.keywords)) {
-        setKeywords(prev => {
-          const existingTerms = new Set(prev.map(kw => kw.term));
+        setKeywords((prev) => {
+          const existingTerms = new Set(prev.map((kw) => kw.term));
           const newKeywords = result.keywords
             .filter((kw: any) => !existingTerms.has(kw.term))
             .map((kw: any) => ({
@@ -261,10 +261,9 @@ export function DisclosureWorkflow({
             }));
           return [...prev, ...newKeywords];
         });
-        
+
         alert(`成功提取 ${result.keywords.length} 个关键词`);
       }
-      
     } catch (error) {
       console.error("关键词提取失败:", error);
       alert("关键词提取失败，请稍后重新点击提取");

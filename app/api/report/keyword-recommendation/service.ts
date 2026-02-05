@@ -83,21 +83,7 @@ export async function generateKeywords(params: {
     return result;
   } catch (error) {
     console.error("关键词推荐生成时发生错误:", error);
-    // 返回默认关键词，确保API能够正常响应
-    return {
-      recommendations: [
-        "智能座舱",
-        "车载系统",
-        "汽车电子",
-        "人机交互",
-        "驾驶辅助",
-        "车联网",
-        "自动驾驶",
-        "座舱域控制器",
-        "车载信息娱乐系统",
-        "智能驾驶舱",
-      ],
-    };
+    throw error;
   }
 }
 

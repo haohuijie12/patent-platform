@@ -36,7 +36,7 @@ const KEYWORD_CLUSTERING_TEMPLATE = `你是一位资深的专利分析师。请�
 请直接输出 JSON，不要包含 Markdown 代码块标记或其他说明。`;
 
 const clusteringPromptTemplate = ChatPromptTemplate.fromTemplate(
-  KEYWORD_CLUSTERING_TEMPLATE
+  KEYWORD_CLUSTERING_TEMPLATE,
 );
 
 const model = new ChatOpenAI({
@@ -80,12 +80,12 @@ export async function generateClusters(params: {
     const timeoutPromise = new Promise<any[]>((_, reject) => {
       setTimeout(() => reject(new Error("关键词聚类生成超时")), 20000);
     });
-    
+
     const result = await Promise.race([
       clusteringChain.invoke(params),
-      timeoutPromise
+      timeoutPromise,
     ]);
-    
+
     let jsonResult: any[];
     try {
       jsonResult = JSON.parse(result as string);
@@ -97,7 +97,7 @@ export async function generateClusters(params: {
         throw new Error("无法解析聚类结果");
       }
     }
-    
+
     return jsonResult;
   } catch (error) {
     console.error("关键词聚类生成时发生错误:", error);
@@ -105,8 +105,8 @@ export async function generateClusters(params: {
       {
         id: 1,
         name: "默认分组",
-        keywords: params.keywords.slice(0, 5)
-      }
+        keywords: params.keywords.slice(0, 5),
+      },
     ];
   }
 }

@@ -11,14 +11,14 @@ export async function POST(request: NextRequest) {
     if (!keywords || !Array.isArray(keywords)) {
       return NextResponse.json(
         { error: "关键词列表是必需的" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (keywords.length === 0) {
       return NextResponse.json(
         { error: "关键词列表不能为空" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -83,17 +83,23 @@ export async function GET(request: NextRequest) {
 
     if (!keywordsParam) {
       return NextResponse.json(
-        { error: "缺少必要参数。请使用格式：/api/report/keyword-clustering?keywords=机器学习,深度学习,神经网络&count=3" },
-        { status: 400 }
+        {
+          error:
+            "缺少必要参数。请使用格式：/api/report/keyword-clustering?keywords=机器学习,深度学习,神经网络&count=3",
+        },
+        { status: 400 },
       );
     }
 
-    const keywords = keywordsParam.split(/[，、,]/).map(k => k.trim()).filter(k => k);
+    const keywords = keywordsParam
+      .split(/[，、,\n\r]/)
+      .map((k) => k.trim())
+      .filter((k) => k);
 
     if (keywords.length === 0) {
       return NextResponse.json(
         { error: "关键词列表不能为空" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

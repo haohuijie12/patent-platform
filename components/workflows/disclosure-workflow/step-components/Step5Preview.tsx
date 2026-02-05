@@ -37,14 +37,10 @@ export function Step5Preview({
 
         <div className="space-y-6">
           <div className="rounded-lg border border-border bg-background p-4">
-            <h3 className="mb-3 font-semibold text-foreground">
-              一、基本信息
-            </h3>
+            <h3 className="mb-3 font-semibold text-foreground">一、基本信息</h3>
             <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">
-                  发明名称：
-                </span>
+                <span className="text-muted-foreground">发明名称：</span>
                 {inventionName}
               </p>
               <p>
@@ -52,15 +48,11 @@ export function Step5Preview({
                 {contactPerson}
               </p>
               <p>
-                <span className="text-muted-foreground">
-                  申请类型：
-                </span>
+                <span className="text-muted-foreground">申请类型：</span>
                 {applicationType}
               </p>
               <p>
-                <span className="text-muted-foreground">
-                  技术领域：
-                </span>
+                <span className="text-muted-foreground">技术领域：</span>
                 本发明创造技术方案所属技术领域为{technicalField}
               </p>
             </div>
@@ -121,10 +113,7 @@ export function Step5Preview({
                     </thead>
                     <tbody>
                       {keywords.map((kw, index) => (
-                        <tr
-                          key={index}
-                          className="border-b border-border"
-                        >
+                        <tr key={index} className="border-b border-border">
                           <td className="px-3 py-1.5">{kw.term}</td>
                           <td className="px-3 py-1.5 text-muted-foreground">
                             {kw.definition}
