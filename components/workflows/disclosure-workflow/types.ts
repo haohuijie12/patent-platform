@@ -4,8 +4,8 @@ export interface ContentBlock {
   type: "text" | "image";
   content: string;
   imageUrl?: string;
-  detectionResult?: ImageDetectionResult; // 添加检测结果
-  isDetecting?: boolean; // 添加检测状态
+  detectionResult?: ImageDetectionResult;
+  isDetecting?: boolean;
 }
 
 export interface KeywordDefinition {
@@ -14,7 +14,7 @@ export interface KeywordDefinition {
 }
 
 export interface AIWarning {
-  type: "unclear" | "brief" | "image";
+  type: "unclear" | "brief" | "image" | string; // 添加 string 类型以支持任意字符串
   message: string;
 }
 

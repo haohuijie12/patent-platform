@@ -22,6 +22,7 @@ import { Step2TechBackground } from "@/components/workflows/disclosure-workflow/
 import { Step3TechSolution } from "@/components/workflows/disclosure-workflow/step-components/Step3TechSolution";
 import { Step4Benefits } from "@/components/workflows/disclosure-workflow/step-components/Step4Benefits";
 import { Step5Preview } from "@/components/workflows/disclosure-workflow/step-components/Step5Preview";
+import toast from "react-hot-toast";
 
 interface DisclosureWorkflowProps {
   fileName: string;
@@ -33,6 +34,13 @@ interface ContentBlock {
   type: "text" | "image";
   content: string;
   imageUrl?: string;
+  detectionResult?: {
+    isWhiteBackground: boolean;
+    isBlackLines: boolean;
+    pass: boolean;
+    reason: string;
+  };
+  isDetecting?: boolean;
 }
 
 interface KeywordDefinition {
@@ -69,11 +77,17 @@ export function DisclosureWorkflow({
   );
   const [keywords, setKeywords] = useState<KeywordDefinition[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [aiWarnings, setAiWarnings] = useState<
+    Array<{ type: string; message: string }>
+  >([]);
 
   // Step 4: 有益效果与保护点
   const [beneficialEffects, setBeneficialEffects] = useState("");
   const [protectionPoints, setProtectionPoints] = useState("");
   const [isGeneratingEffects, setIsGeneratingEffects] = useState(false);
+
+  // Step 5: 导出状态
+  const [isExporting, setIsExporting] = useState(false);
 
   // 获取技术方案文本
   const getTechSolutionText = () => {
@@ -85,8 +99,8 @@ export function DisclosureWorkflow({
 
   // 通用流式API调用
   const callStreamAPI = async (
-    url: string, 
-    body: any, 
+    url: string,
+    body: any,
     onProgress?: (chunk: string) => void
   ) => {
     const response = await fetch(url, {
@@ -107,7 +121,7 @@ export function DisclosureWorkflow({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         const chunk = decoder.decode(value);
         result += chunk;
         onProgress?.(chunk);
@@ -118,14 +132,14 @@ export function DisclosureWorkflow({
   };
 
   // 生成技术背景
-  const generateTechBackground = async () => {
+  const generateTechBackground = async (type: "ai" | "refresh") => {
     if (!inventionName.trim() || !technicalField.trim()) {
-      alert("请先填写发明名称和技术领域");
+      toast.error("请先填写发明名称和技术领域");
       return;
     }
 
     setIsGeneratingBackground(true);
-    
+
     try {
       setTechBackground("");
       await callStreamAPI(
@@ -138,7 +152,7 @@ export function DisclosureWorkflow({
         (chunk) => setTechBackground(prev => prev + chunk)
       );
     } catch (error) {
-      alert("AI生成失败，请点击重新生成按钮");
+      toast.error("AI生成失败，请点击重新生成按钮");
     } finally {
       setIsGeneratingBackground(false);
     }
@@ -170,28 +184,163 @@ export function DisclosureWorkflow({
     }
   };
 
-  // 处理图片上传
-  const handleImageUpload = (
+  // 图片转base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // 图片检测
+  const detectImage = async (imageBase64: string) => {
+    try {
+      const response = await fetch("/api/disclosure/image-detection", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageUrl: imageBase64 }),
+      });
+
+      if (!response.ok) {
+        throw new Error("图片检测失败");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("图片检测失败:", error);
+      throw error;
+    }
+  };
+
+  // 处理图片上传和检测
+  const handleImageUpload = async (
     id: string,
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // 设置检测状态
+    setContentBlocks(
+      contentBlocks.map((block) =>
+        block.id === id ? { ...block, isDetecting: true } : block,
+      ),
+    );
+
+    try {
+      // 生成预览URL
+      const url = URL.createObjectURL(file);
+
+      // 转换图片为base64
+      const imageBase64 = await fileToBase64(file);
+
+      // 调用图片检测API
+      const detectionResult = await detectImage(imageBase64);
+
+      // 更新图片块
+      setContentBlocks(
+        contentBlocks.map((block) =>
+          block.id === id
+            ? {
+                ...block,
+                imageUrl: url,
+                content: file.name,
+                detectionResult,
+                isDetecting: false
+              }
+            : block,
+        ),
+      );
+
+      // 如果检测不通过，添加到警告列表
+      if (!detectionResult.pass) {
+        setAiWarnings(prev => [...prev, {
+          type: "image",
+          message: `图片检测未通过：${detectionResult.reason}`
+        }]);
+      }
+
+    } catch (error) {
+      console.error("图片处理失败:", error);
+
+      // 更新图片块（只设置预览，不设置检测结果）
       const url = URL.createObjectURL(file);
       setContentBlocks(
         contentBlocks.map((block) =>
           block.id === id
-            ? { ...block, imageUrl: url, content: file.name }
+            ? {
+                ...block,
+                imageUrl: url,
+                content: file.name,
+                isDetecting: false
+              }
             : block,
         ),
       );
+
+      toast.error("图片检测失败，请稍后重新上传检测");
+    }
+  };
+
+  // 重新检测图片
+  const handleRedetectImage = async (id: string) => {
+    const block = contentBlocks.find(b => b.id === id);
+    if (!block?.imageUrl) return;
+
+    setContentBlocks(
+      contentBlocks.map((block) =>
+        block.id === id ? { ...block, isDetecting: true } : block,
+      ),
+    );
+
+    try {
+      const detectionResult = await detectImage(block.imageUrl);
+
+      setContentBlocks(
+        contentBlocks.map((block) =>
+          block.id === id
+            ? {
+                ...block,
+                detectionResult,
+                isDetecting: false
+              }
+            : block,
+        ),
+      );
+
+      // 更新警告列表
+      if (!detectionResult.pass) {
+        setAiWarnings(prev => {
+          const filtered = prev.filter(w => !w.message.includes(id));
+          return [...filtered, {
+            type: "image",
+            message: `图片检测未通过：${detectionResult.reason}`
+          }];
+        });
+      } else {
+        setAiWarnings(prev => prev.filter(w => !w.message.includes(id)));
+      }
+
+    } catch (error) {
+      console.error("重新检测失败:", error);
+      setContentBlocks(
+        contentBlocks.map((block) =>
+          block.id === id ? { ...block, isDetecting: false } : block,
+        ),
+      );
+      toast.error("重新检测失败，请稍后重试");
     }
   };
 
   // 单个文本块 AI 优化
-  const handleOptimizeBlock = async (id: string, content: string) => {
-    if (!content.trim()) {
-      alert("请先输入要优化的内容");
+  const handleOptimizeBlock = async (id: string) => {
+    const block = contentBlocks.find(b => b.id === id);
+    if (!block || !block.content.trim()) {
+      toast.error("请先输入要优化的内容");
       return;
     }
 
@@ -201,11 +350,11 @@ export function DisclosureWorkflow({
       const optimized = await callStreamAPI(
         "/api/disclosure/proposal-text-optimization",
         {
-          text: content,
+          text: block.content,
           optimizationType: "standard",
         }
       );
-      
+
       // 更新文本块内容
       setContentBlocks((prev) =>
         prev.map((block) => {
@@ -219,8 +368,10 @@ export function DisclosureWorkflow({
         }),
       );
 
+      toast.success("文本优化完成");
+
     } catch (error) {
-      alert("文本优化失败，请稍后重新点击优化按钮");
+      toast.error("文本优化失败，请稍后重新点击优化按钮");
     } finally {
       setOptimizingBlockId(null);
     }
@@ -230,7 +381,7 @@ export function DisclosureWorkflow({
   const extractKeywords = async () => {
     const techSolutionText = getTechSolutionText();
     if (!techSolutionText.trim()) {
-      alert("请先输入技术方案内容");
+      toast.error("请先输入技术方案内容");
       return;
     }
 
@@ -262,11 +413,11 @@ export function DisclosureWorkflow({
           return [...prev, ...newKeywords];
         });
 
-        alert(`成功提取 ${result.keywords.length} 个关键词`);
+        toast.success(`成功提取 ${result.keywords.length} 个关键词`);
       }
     } catch (error) {
       console.error("关键词提取失败:", error);
-      alert("关键词提取失败，请稍后重新点击提取");
+      toast.error("关键词提取失败，请稍后重新点击提取");
     }
   };
 
@@ -277,7 +428,7 @@ export function DisclosureWorkflow({
       .map((b) => ({ id: b.id, content: b.content }));
 
     if (textBlocks.length === 0) {
-      alert("请先输入技术方案内容");
+      toast.error("请先输入技术方案内容");
       return;
     }
 
@@ -286,14 +437,16 @@ export function DisclosureWorkflow({
     try {
       // 逐个优化文本块
       for (const block of textBlocks) {
-        await handleOptimizeBlock(block.id, block.content);
+        await handleOptimizeBlock(block.id);
       }
 
       // 自动提取关键词
       await extractKeywords();
-      
+
+      toast.success("AI优化完成");
+
     } catch (error) {
-      alert("AI优化失败，请稍后重试");
+      toast.error("AI优化失败，请稍后重试");
     } finally {
       setIsRewriting(false);
     }
@@ -302,14 +455,14 @@ export function DisclosureWorkflow({
   // 生成有益效果和保护点
   const generateBeneficialEffects = async () => {
     const techSolutionText = getTechSolutionText();
-    
+
     if (!techBackground.trim() || !techSolutionText.trim()) {
-      alert("请先完成技术背景和技术方案");
+      toast.error("请先完成技术背景和技术方案");
       return;
     }
 
     setIsGeneratingEffects(true);
-    
+
     try {
       // 生成有益效果
       setBeneficialEffects("");
@@ -321,8 +474,11 @@ export function DisclosureWorkflow({
         },
         (chunk) => setBeneficialEffects(prev => prev + chunk)
       );
+
+      toast.success("有益效果生成完成");
+
     } catch (error) {
-      alert("有益效果生成失败");
+      toast.error("有益效果生成失败");
     }
 
     try {
@@ -336,10 +492,13 @@ export function DisclosureWorkflow({
         },
         (chunk) => setProtectionPoints(prev => prev + chunk)
       );
+
+      toast.success("保护点生成完成");
+
     } catch (error) {
-      alert("保护点生成失败");
+      toast.error("保护点生成失败");
     }
-    
+
     setIsGeneratingEffects(false);
   };
 
@@ -360,6 +519,61 @@ export function DisclosureWorkflow({
 
   const deleteKeyword = (index: number) => {
     setKeywords(keywords.filter((_, i) => i !== index));
+  };
+
+  // DOCX模板导出功能
+  const handleExportDocx = async () => {
+    // 验证必填字段
+    if (!inventionName || !technicalField || !techBackground) {
+      toast.error("缺少必要信息：发明名称、技术领域、技术背景");
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const techSolutionText = getTechSolutionText();
+
+      const response = await fetch("/api/disclosure/template-export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inventionName,
+          contactPerson,
+          applicationType,
+          technicalField,
+          techBackground,
+          technicalSolution: techSolutionText,
+          beneficialEffects,
+          protectionPoints,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("导出失败");
+      }
+
+      // 创建Blob并下载
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `专利交底书-${inventionName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("文档导出成功！");
+
+    } catch (error) {
+      console.error("文档导出错误:", error);
+      toast.error("文档导出失败，请稍后重试");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -394,7 +608,7 @@ export function DisclosureWorkflow({
             { num: 2, label: "技术背景" },
             { num: 3, label: "技术方案" },
             { num: 4, label: "有益效果" },
-            { num: 5, label: "生成文档" },
+            { num: 5, label: "预览导出" },
           ].map((s, index) => (
             <React.Fragment key={s.num}>
               <div className="flex items-center gap-2">
@@ -457,7 +671,7 @@ export function DisclosureWorkflow({
               isGeneratingBackground={isGeneratingBackground}
               existingProblems={existingProblems}
               setExistingProblems={setExistingProblems}
-              generateTechBackground={() => generateTechBackground()}
+              generateTechBackground={generateTechBackground}
             />
           )}
 
@@ -469,16 +683,14 @@ export function DisclosureWorkflow({
               isRewriting={isRewriting}
               optimizingBlockId={optimizingBlockId}
               keywords={keywords}
-              aiWarnings={[]}
+              aiWarnings={aiWarnings}
               fileInputRef={fileInputRef}
               addContentBlock={addContentBlock}
               updateContentBlock={updateContentBlock}
               deleteContentBlock={deleteContentBlock}
               handleImageUpload={handleImageUpload}
-              handleOptimizeBlock={(id) => {
-                const block = contentBlocks.find(b => b.id === id);
-                if (block) handleOptimizeBlock(id, block.content);
-              }}
+              handleOptimizeBlock={(id) => handleOptimizeBlock(id)}
+              handleRedetectImage={handleRedetectImage}
               handleAIRewrite={handleAIRewrite}
               extractKeywords={extractKeywords}
               addKeyword={addKeyword}
@@ -501,17 +713,50 @@ export function DisclosureWorkflow({
 
           {/* Step 5: 预览 */}
           {step === 5 && (
-            <Step5Preview
-              inventionName={inventionName}
-              contactPerson={contactPerson}
-              applicationType={applicationType}
-              technicalField={technicalField}
-              techBackground={techBackground}
-              contentBlocks={contentBlocks}
-              keywords={keywords}
-              beneficialEffects={beneficialEffects}
-              protectionPoints={protectionPoints}
-            />
+            <>
+              <Step5Preview
+                inventionName={inventionName}
+                contactPerson={contactPerson}
+                applicationType={applicationType}
+                technicalField={technicalField}
+                techBackground={techBackground}
+                contentBlocks={contentBlocks}
+                keywords={keywords}
+                beneficialEffects={beneficialEffects}
+                protectionPoints={protectionPoints}
+              />
+
+              {/* 导出按钮区域 */}
+              <div className="mt-6 rounded-lg border border-border bg-card p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      文档导出
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      导出为Word文档格式，可直接用于专利申请
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleExportDocx}
+                    disabled={isExporting}
+                    className="gap-2"
+                  >
+                    {isExporting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        正在导出...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        导出Word文档
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -561,10 +806,11 @@ export function DisclosureWorkflow({
                 <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button className="gap-2">
-                <Download className="h-4 w-4" />
-                下载 Word 版本
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  所有步骤已完成，可导出文档
+                </span>
+              </div>
             )}
           </div>
         </footer>

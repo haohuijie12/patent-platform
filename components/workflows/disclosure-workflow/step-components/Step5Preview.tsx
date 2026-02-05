@@ -88,11 +88,11 @@ export function Step5Preview({
                       <p className="text-sm text-muted-foreground">
                         图 {index + 1}：{block.content}
                       </p>
-                      
+
                       {/* 预览中的检测结果 */}
                       {block.detectionResult && (
-                        <div className={block.detectionResult.pass 
-                          ? "rounded-lg border border-green-200 bg-green-50 p-3" 
+                        <div className={block.detectionResult.pass
+                          ? "rounded-lg border border-green-200 bg-green-50 p-3"
                           : "rounded-lg border border-red-200 bg-red-50 p-3"
                         }>
                           <div className="flex items-center gap-2 mb-1">
