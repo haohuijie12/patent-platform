@@ -3,7 +3,14 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, X, ImageIcon, Sparkles, AlertTriangle, BookOpen } from "lucide-react";
+import {
+  Plus,
+  X,
+  ImageIcon,
+  Sparkles,
+  AlertTriangle,
+  BookOpen,
+} from "lucide-react";
 import type { ContentBlock, KeywordDefinition, AIWarning } from "../types";
 
 interface Step3TechSolutionProps {
@@ -17,12 +24,19 @@ interface Step3TechSolutionProps {
   addContentBlock: (type: "text" | "image") => void;
   updateContentBlock: (id: string, content: string) => void;
   deleteContentBlock: (id: string) => void;
-  handleImageUpload: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleImageUpload: (
+    id: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => void;
   handleOptimizeBlock: (id: string) => void;
   handleAIRewrite: () => void;
   extractKeywords: () => void; // 新增
   addKeyword: () => void;
-  updateKeyword: (index: number, field: keyof KeywordDefinition, value: string) => void;
+  updateKeyword: (
+    index: number,
+    field: keyof KeywordDefinition,
+    value: string,
+  ) => void;
   deleteKeyword: (index: number) => void;
 }
 
@@ -103,13 +117,10 @@ export function Step3TechSolution({
                       <Sparkles
                         className={cn(
                           "h-3 w-3",
-                          optimizingBlockId === block.id &&
-                            "animate-pulse",
+                          optimizingBlockId === block.id && "animate-pulse",
                         )}
                       />
-                      {optimizingBlockId === block.id
-                        ? "优化中..."
-                        : "AI 优化"}
+                      {optimizingBlockId === block.id ? "优化中..." : "AI 优化"}
                     </Button>
                   </div>
                 </div>
@@ -171,7 +182,9 @@ export function Step3TechSolution({
               disabled={isRewriting}
               className="gap-2"
             >
-              <BookOpen className={cn("h-4 w-4", isRewriting && "animate-pulse")} />
+              <BookOpen
+                className={cn("h-4 w-4", isRewriting && "animate-pulse")}
+              />
               提取关键词
             </Button>
             <Button
@@ -232,11 +245,7 @@ export function Step3TechSolution({
                         type="text"
                         value={kw.definition}
                         onChange={(e) =>
-                          updateKeyword(
-                            index,
-                            "definition",
-                            e.target.value,
-                          )
+                          updateKeyword(index, "definition", e.target.value)
                         }
                         placeholder="输入释义"
                         className="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm text-foreground hover:border-border focus:border-primary focus:bg-background focus:outline-none"

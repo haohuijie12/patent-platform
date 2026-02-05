@@ -90,8 +90,8 @@ export function DisclosureWorkflow({
   // 获取技术方案文本
   const getTechSolutionText = () => {
     return contentBlocks
-      .filter(block => block.type === "text")
-      .map(block => block.content)
+      .filter((block) => block.type === "text")
+      .map((block) => block.content)
       .join("\n");
   };
 
@@ -103,10 +103,10 @@ export function DisclosureWorkflow({
     }
 
     setIsGeneratingBackground(true);
-    
+
     try {
       setTechBackground("");
-      
+
       const response = await fetch("/api/disclosure/background-generation", {
         method: "POST",
         headers: {
@@ -115,7 +115,8 @@ export function DisclosureWorkflow({
         body: JSON.stringify({
           inventionName,
           technicalField,
-          existingProblems: existingProblems || "（未提供具体问题，请根据通用情况分析）",
+          existingProblems:
+            existingProblems || "（未提供具体问题，请根据通用情况分析）",
         }),
       });
 
@@ -131,13 +132,12 @@ export function DisclosureWorkflow({
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value);
           generatedText += chunk;
           setTechBackground(generatedText);
         }
       }
-      
     } catch (error) {
       console.error("生成技术背景失败:", error);
       alert("AI生成失败，请稍后重新点击生成按钮");
@@ -205,22 +205,25 @@ export function DisclosureWorkflow({
     }
 
     setOptimizingBlockId(id);
-    setOptimizationStatus(prev => ({
+    setOptimizationStatus((prev) => ({
       ...prev,
-      [id]: "loading"
+      [id]: "loading",
     }));
 
     try {
-      const response = await fetch("/api/disclosure/proposal-text-optimization", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "/api/disclosure/proposal-text-optimization",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: content,
+            optimizationType: optimizationType || "standard",
+          }),
         },
-        body: JSON.stringify({
-          text: content,
-          optimizationType: optimizationType || "standard",
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`优化失败: ${response.status}`);
@@ -234,14 +237,14 @@ export function DisclosureWorkflow({
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value);
           optimizedText += chunk;
         }
       }
 
       // 更新文本块内容
-      setContentBlocks(prev =>
+      setContentBlocks((prev) =>
         prev.map((block) => {
           if (block.id === id && block.type === "text") {
             return {
@@ -250,19 +253,18 @@ export function DisclosureWorkflow({
             };
           }
           return block;
-        })
+        }),
       );
 
-      setOptimizationStatus(prev => ({
+      setOptimizationStatus((prev) => ({
         ...prev,
-        [id]: "success"
+        [id]: "success",
       }));
-
     } catch (error) {
       console.error("文本块优化失败:", error);
-      setOptimizationStatus(prev => ({
+      setOptimizationStatus((prev) => ({
         ...prev,
-        [id]: "error"
+        [id]: "error",
       }));
       alert("文本优化失败，请稍后重新点击优化按钮");
     } finally {
@@ -292,11 +294,11 @@ export function DisclosureWorkflow({
       }
 
       const result = await response.json();
-      
+
       // 合并关键词，避免重复
       if (result.keywords && Array.isArray(result.keywords)) {
-        setKeywords(prev => {
-          const existingTerms = new Set(prev.map(kw => kw.term));
+        setKeywords((prev) => {
+          const existingTerms = new Set(prev.map((kw) => kw.term));
           const newKeywords = result.keywords
             .filter((kw: any) => !existingTerms.has(kw.term))
             .map((kw: any) => ({
@@ -305,10 +307,9 @@ export function DisclosureWorkflow({
             }));
           return [...prev, ...newKeywords];
         });
-        
+
         alert(`成功提取 ${result.keywords.length} 个关键词`);
       }
-      
     } catch (error) {
       console.error("关键词提取失败:", error);
       alert("关键词提取失败，请稍后重新点击提取");
@@ -395,22 +396,25 @@ export function DisclosureWorkflow({
   // 生成有益效果
   const generateBeneficialEffects = async () => {
     setIsGeneratingEffects(true);
-    
+
     try {
       const techText = getTechSolutionText();
-      
+
       if (!techText.trim()) {
         alert("请先输入技术方案");
         return;
       }
-      
+
       // 这里需要调用有益效果生成的API
       // 暂时用模拟数据
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setBeneficialEffects(`基于技术方案，本发明具有以下有益效果：\n\n1. 提高了${technicalField || "相关领域"}的技术效率\n2. 改善了用户体验\n3. 降低了实施成本\n4. 增强了系统稳定性`);
-      setProtectionPoints(`技术关键点：\n1. ${inventionName || "本发明"}的核心架构设计\n2. 关键技术模块的创新实现\n3. 数据处理方法的优化\n4. 系统整体协同工作机制`);
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setBeneficialEffects(
+        `基于技术方案，本发明具有以下有益效果：\n\n1. 提高了${technicalField || "相关领域"}的技术效率\n2. 改善了用户体验\n3. 降低了实施成本\n4. 增强了系统稳定性`,
+      );
+      setProtectionPoints(
+        `技术关键点：\n1. ${inventionName || "本发明"}的核心架构设计\n2. 关键技术模块的创新实现\n3. 数据处理方法的优化\n4. 系统整体协同工作机制`,
+      );
     } catch (error) {
       alert("生成失败，请稍后重试");
     } finally {
@@ -663,17 +667,33 @@ export function DisclosureWorkflow({
                     <h3 className="font-semibold text-foreground">优化设置</h3>
                   </div>
                 </div>
-                
+
                 <div className="mt-4">
                   <label className="mb-2 block text-sm font-medium text-foreground">
                     优化类型
                   </label>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {[
-                      { value: "standard", label: "标准优化", desc: "平衡专业性和可读性" },
-                      { value: "detailed", label: "详细优化", desc: "增加技术细节和实施方式" },
-                      { value: "concise", label: "简明优化", desc: "提炼核心，简洁表达" },
-                      { value: "legal", label: "法律优化", desc: "强化法律保护角度表述" },
+                      {
+                        value: "standard",
+                        label: "标准优化",
+                        desc: "平衡专业性和可读性",
+                      },
+                      {
+                        value: "detailed",
+                        label: "详细优化",
+                        desc: "增加技术细节和实施方式",
+                      },
+                      {
+                        value: "concise",
+                        label: "简明优化",
+                        desc: "提炼核心，简洁表达",
+                      },
+                      {
+                        value: "legal",
+                        label: "法律优化",
+                        desc: "强化法律保护角度表述",
+                      },
                     ].map((option) => (
                       <button
                         key={option.value}
@@ -682,7 +702,7 @@ export function DisclosureWorkflow({
                           "rounded-lg border p-3 text-left transition-colors",
                           optimizationType === option.value
                             ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary"
+                            : "border-border hover:border-primary",
                         )}
                       >
                         <div className="font-medium text-foreground">
@@ -761,18 +781,24 @@ export function DisclosureWorkflow({
                                 失败
                               </div>
                             )}
-                            
+
                             <Button
                               size="sm"
                               variant="secondary"
                               className="h-7 gap-1 text-xs"
-                              onClick={() => handleOptimizeBlock(block.id, block.content)}
-                              disabled={optimizingBlockId === block.id || !block.content.trim()}
+                              onClick={() =>
+                                handleOptimizeBlock(block.id, block.content)
+                              }
+                              disabled={
+                                optimizingBlockId === block.id ||
+                                !block.content.trim()
+                              }
                             >
                               <Sparkles
                                 className={cn(
                                   "h-3 w-3",
-                                  optimizingBlockId === block.id && "animate-pulse",
+                                  optimizingBlockId === block.id &&
+                                    "animate-pulse",
                                 )}
                               />
                               {optimizingBlockId === block.id
@@ -839,7 +865,12 @@ export function DisclosureWorkflow({
                       disabled={isRewriting}
                       className="gap-2"
                     >
-                      <BookOpen className={cn("h-4 w-4", isRewriting && "animate-pulse")} />
+                      <BookOpen
+                        className={cn(
+                          "h-4 w-4",
+                          isRewriting && "animate-pulse",
+                        )}
+                      />
                       提取关键词
                     </Button>
                     <Button
@@ -848,7 +879,10 @@ export function DisclosureWorkflow({
                       className="gap-2"
                     >
                       <Sparkles
-                        className={cn("h-4 w-4", isRewriting && "animate-pulse")}
+                        className={cn(
+                          "h-4 w-4",
+                          isRewriting && "animate-pulse",
+                        )}
                       />
                       {isRewriting ? "AI 处理中..." : "AI 优化全部"}
                     </Button>

@@ -89,9 +89,7 @@ export function Step1BasicInfo({
               技术领域 *
             </label>
             <div className="flex items-center gap-2 text-foreground">
-              <span className="text-sm">
-                本发明创造技术方案所属技术领域为
-              </span>
+              <span className="text-sm">本发明创造技术方案所属技术领域为</span>
               <input
                 type="text"
                 value={technicalField}
