@@ -2,6 +2,9 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
+import { CallbackHandler } from "@langfuse/langchain";
+
+const langfuseHandler = new CallbackHandler();
 
 // 技术方案优化模板
 const PROPOSAL_OPTIMIZATION_TEMPLATE_STRING = `你是一位专业的专利代理师和专利审查专家。请对以下专利交底书中的"技术方案"部分进行优化，使其更加专业、清晰、完整，并符合专利撰写要求。
@@ -32,16 +35,15 @@ const proposalPromptTemplate = ChatPromptTemplate.fromTemplate(
   PROPOSAL_OPTIMIZATION_TEMPLATE_STRING,
 );
 
-// 配置 DeepSeek 模型
 const model = new ChatOpenAI({
-  modelName: "deepseek-chat", // DeepSeek 模型
+  modelName: process.env.OPENAI_CHAT_MODEL, // 使用统一的模型配置
   temperature: 0.3, // 较低的温度，保持稳定性
-  openAIApiKey: process.env.DEEPSEEK_API_KEY, // 从环境变量读取
+  openAIApiKey: process.env.OPENAI_API_KEY, // 使用统一的 OPENAI_API_KEY
   configuration: {
-    baseURL: "https://api.deepseek.com", // DeepSeek API 地址
+    baseURL: process.env.OPENAI_BASE_URL, // 使用统一的 OPENAI_BASE_URL
   },
   timeout: 120000, // 120秒超时
-  maxRetries: 3,
+  maxRetries: 1,
   streaming: true,
 });
 
@@ -66,7 +68,9 @@ export async function streamProposalText(params: {
 }) {
   try {
     console.log("开始优化技术方案，优化类型:", params.optimizationType);
-    const stream = await proposalOptimizationChain.stream(params);
+    const stream = await proposalOptimizationChain.stream(params, {
+      callbacks: [langfuseHandler],
+    });
     return stream;
   } catch (error) {
     console.error("技术方案优化时发生错误:", error);
@@ -84,7 +88,9 @@ export async function optimizeProposalText(params: {
   optimizationType: string;
 }): Promise<string> {
   try {
-    const result = await proposalOptimizationChain.invoke(params);
+    const result = await proposalOptimizationChain.invoke(params, {
+      callbacks: [langfuseHandler],
+    });
     return result;
   } catch (error) {
     console.error("技术方案优化时发生错误:", error);

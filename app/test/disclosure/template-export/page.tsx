@@ -42,19 +42,53 @@ export default function TemplateExportPage() {
 2. 根据权利要求1所述的方法，其特征在于，所述卷积神经网络模型采用了残差网络结构。
 3. 根据权利要求1所述的方法，其特征在于，所述数据预处理包括图像归一化和随机数据增强。`);
 
-  const handleExport = () => {
-    const data = {
-      inventionName,
-      contactPerson,
-      applicationType,
-      technicalField,
-      techBackground,
-      technicalSolution,
-      beneficialEffects,
-      protectionPoints,
-    };
-    console.log("Exporting data:", data);
-    toast.info("该功能正在调试中");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const data = {
+        inventionName,
+        contactPerson,
+        applicationType,
+        technicalField,
+        techBackground,
+        technicalSolution,
+        beneficialEffects,
+        protectionPoints,
+      };
+
+      const response = await fetch("/api/disclosure/template-export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "文档生成失败");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `专利交底书-${inventionName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("文档导出成功");
+    } catch (error) {
+      console.error("导出失败:", error);
+      toast.error(error instanceof Error ? error.message : "文档导出失败");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -63,9 +97,9 @@ export default function TemplateExportPage() {
         <h2 className="text-3xl font-bold tracking-tight">
           交底书模板导出测试
         </h2>
-        <Button onClick={handleExport}>
+        <Button onClick={handleExport} disabled={isExporting}>
           <Download className="mr-2 h-4 w-4" />
-          生成并导出
+          {isExporting ? "生成中..." : "生成并导出"}
         </Button>
       </div>
 

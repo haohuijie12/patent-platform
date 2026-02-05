@@ -2,6 +2,9 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
+import { CallbackHandler } from "@langfuse/langchain";
+
+const langfuseHandler = new CallbackHandler();
 
 const BENEFICIAL_EFFECTS_TEMPLATE_STRING = `你是一位专业的专利代理师，请根据以下信息为一份专利申请撰写"有益效果"（Beneficial Effects）部分。
 
@@ -48,7 +51,9 @@ export async function streamBeneficialEffects(params: {
   technicalSolution: string;
 }) {
   try {
-    const stream = await beneficialEffectsChain.stream(params);
+    const stream = await beneficialEffectsChain.stream(params, {
+      callbacks: [langfuseHandler],
+    });
     return stream;
   } catch (error) {
     console.error("有益效果生成时发生错误:", error);

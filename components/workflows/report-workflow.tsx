@@ -547,7 +547,7 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
                     {keywords.map((keyword, index) => (
-                      <button
+                      <div
                         key={index}
                         onClick={() => handleKeywordClick(keyword.word)}
                         className={cn(
@@ -571,7 +571,7 @@ export function ReportWorkflow({ fileName, onBack }: ReportWorkflowProps) {
                         >
                           <X className="h-3 w-3" />
                         </button>
-                      </button>
+                      </div>
                     ))}
                   </div>
 

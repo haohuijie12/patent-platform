@@ -636,11 +636,13 @@ export function DisclosureWorkflow({
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                     <p className="text-muted-foreground">AI正在思考...</p>
+                    <p className="text-muted-foreground">AI正在思考...</p>
                   </div>
                 ) : (
                   <textarea
                     value={techBackground}
                     onChange={(e) => setTechBackground(e.target.value)}
+                    placeholder="点击'AI生成'按钮开始生成技术背景"
                     placeholder="点击'AI生成'按钮开始生成技术背景"
                     rows={12}
                     className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-primary resize-none"

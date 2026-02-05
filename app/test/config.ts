@@ -1,4 +1,14 @@
-import { FileText, Search, Type, FileOutput, Sparkles } from "lucide-react";
+import {
+  FileText,
+  Search,
+  Type,
+  FileOutput,
+  FileSearch,
+  Tag,
+  Sparkles,
+  Image,
+  Binary,
+} from "lucide-react";
 
 export interface TestMenuItem {
   title: string;
@@ -12,11 +22,6 @@ export const testConfig: TestMenuItem[] = [
     title: "专利交底书",
     icon: FileText,
     items: [
-      {
-        title: "交底书模板导出",
-        url: "/test/disclosure/template-export",
-        icon: FileOutput,
-      },
       {
         title: "技术背景生成",
         url: "/test/disclosure/background-generation",
@@ -33,6 +38,11 @@ export const testConfig: TestMenuItem[] = [
         icon: Search,
       },
       {
+        title: "图片检测",
+        url: "/test/disclosure/image-detection",
+        icon: Image,
+      },
+      {
         title: "有益效果生成",
         url: "/test/disclosure/beneficial-effect-generation",
         icon: Sparkles,
@@ -41,6 +51,11 @@ export const testConfig: TestMenuItem[] = [
         title: "预保护点生成",
         url: "/test/disclosure/pre-protection-point-generation",
         icon: Sparkles,
+      },
+      {
+        title: "交底书模板导出",
+        url: "/test/disclosure/template-export",
+        icon: FileOutput,
       },
     ],
   },
@@ -53,6 +68,11 @@ export const testConfig: TestMenuItem[] = [
         url: "/test/report/conclusion-generation",
         icon: FileOutput,
       },
+      {
+        title: "关键词推荐",
+        url: "/test/report/keyword-recommendation",
+        icon: Tag,
+      },
     ],
   },
   {
@@ -60,6 +80,17 @@ export const testConfig: TestMenuItem[] = [
     icon: Search,
     items: [
       // 预留位置，暂时为空，或者可以加一个待开发的页面
+    ],
+  },
+  {
+    title: "通用服务",
+    icon: Sparkles,
+    items: [
+      {
+        title: "Embedding 测试",
+        url: "/test/common/embedding",
+        icon: Binary,
+      },
     ],
   },
 ];

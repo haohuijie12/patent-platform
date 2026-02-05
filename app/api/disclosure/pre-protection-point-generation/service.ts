@@ -2,6 +2,9 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
+import { CallbackHandler } from "@langfuse/langchain";
+
+const langfuseHandler = new CallbackHandler();
 
 const PROTECTION_POINTS_TEMPLATE_STRING = `你是一位专业的专利代理师，请根据以下信息为一份专利申请撰写"技术关键点和欲保护点"（Technical Key Points and Protection Scope）部分。
 
@@ -48,7 +51,9 @@ export async function streamProtectionPoints(params: {
   technicalSolution: string;
 }) {
   try {
-    const stream = await protectionPointsChain.stream(params);
+    const stream = await protectionPointsChain.stream(params, {
+      callbacks: [langfuseHandler],
+    });
     return stream;
   } catch (error) {
     console.error("技术关键点和欲保护点生成时发生错误:", error);

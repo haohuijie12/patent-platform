@@ -2,6 +2,9 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { ChatOpenAI } from "@langchain/openai";
+import { CallbackHandler } from "@langfuse/langchain";
+
+const langfuseHandler = new CallbackHandler();
 
 // 关键词解释生成模板字符串
 const KEYWORDS_EXPLANATION_TEMPLATE_STRING = `你是一位专业的专利代理师，请根据以下提供的技术方案，提取其中的关键技术术语，并给出通俗易懂的解释，以便于专利审查员或公众理解。
@@ -35,11 +38,11 @@ const keywordsPromptTemplate = ChatPromptTemplate.fromTemplate(
 
 // 创建 OpenAI Compatible 模型实例
 const model = new ChatOpenAI({
-  modelName: process.env.DEEPSEEK_CHAT_MODEL || "",
+  modelName: process.env.OPENAI_CHAT_MODEL || "",
   temperature: 0.1, // 关键词解释需要准确，温度低一点
-  openAIApiKey: process.env.DEEPSEEK_API_KEY,
+  openAIApiKey: process.env.OPENAI_API_KEY,
   configuration: {
-    baseURL: process.env.DEEPSEEK_BASE_URL || "",
+    baseURL: process.env.OPENAI_BASE_URL || "",
   },
   timeout: 120000,
   maxRetries: 1,
@@ -65,7 +68,9 @@ export async function generateKeywordsExplanation(params: {
   techSolution: string;
 }): Promise<object> {
   try {
-    const result = await keywordsExplanationChain.invoke(params);
+    const result = await keywordsExplanationChain.invoke(params, {
+      callbacks: [langfuseHandler],
+    });
     return result;
   } catch (error) {
     console.error("关键词解释生成时发生错误:", error);

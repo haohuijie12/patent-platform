@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,18 @@ import { toast } from "sonner";
 
 export default function ConclusionGenerationPage() {
   const [searchTopic, setSearchTopic] = useState("电动汽车电池热管理技术");
-  const [searchResults, setSearchResults] = useState("检索到相关专利150篇，其中发明专利120篇，实用新型30篇");
-  const [keyPatentAnalysis, setKeyPatentAnalysis] = useState("核心专利主要分布在特斯拉、宁德时代等公司，关键技术包括液冷系统、相变材料等");
-  const [patentMap, setPatentMap] = useState("技术分布集中在热管理控制系统、冷却介质、电池包结构");
-  const [innovationAssessment, setInnovationAssessment] = useState("目标技术具有中等创新性，存在一定的专利壁垒");
+  const [searchResults, setSearchResults] = useState(
+    "检索到相关专利150篇，其中发明专利120篇，实用新型30篇",
+  );
+  const [keyPatentAnalysis, setKeyPatentAnalysis] = useState(
+    "核心专利主要分布在特斯拉、宁德时代等公司，关键技术包括液冷系统、相变材料等",
+  );
+  const [patentMap, setPatentMap] = useState(
+    "技术分布集中在热管理控制系统、冷却介质、电池包结构",
+  );
+  const [innovationAssessment, setInnovationAssessment] = useState(
+    "目标技术具有中等创新性，存在一定的专利壁垒",
+  );
 
   const { completion, complete, isLoading, stop, setCompletion } =
     useCompletion({
@@ -56,7 +64,7 @@ export default function ConclusionGenerationPage() {
           searchResults,
           keyPatentAnalysis,
           patentMap,
-          innovationAssessment
+          innovationAssessment,
         },
       });
     } catch (err) {
