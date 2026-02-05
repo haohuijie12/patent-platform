@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, X, ImageIcon, Sparkles, AlertTriangle, BookOpen } from "lucide-react";
+import { Plus, X, ImageIcon, Sparkles, BookOpen } from "lucide-react";
 import type { ContentBlock, KeywordDefinition, AIWarning } from "../types";
 
 interface Step3TechSolutionProps {
@@ -20,7 +20,7 @@ interface Step3TechSolutionProps {
   handleImageUpload: (id: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   handleOptimizeBlock: (id: string) => void;
   handleAIRewrite: () => void;
-  extractKeywords: () => void; // 新增
+  extractKeywords: () => void;
   addKeyword: () => void;
   updateKeyword: (index: number, field: keyof KeywordDefinition, value: string) => void;
   deleteKeyword: (index: number) => void;
@@ -40,7 +40,7 @@ export function Step3TechSolution({
   handleImageUpload,
   handleOptimizeBlock,
   handleAIRewrite,
-  extractKeywords, // 新增
+  extractKeywords,
   addKeyword,
   updateKeyword,
   deleteKeyword,
@@ -185,6 +185,39 @@ export function Step3TechSolution({
               {isRewriting ? "AI 处理中..." : "AI 优化全部"}
             </Button>
           </div>
+        </div>
+      </div>
+
+      {aiWarnings.length > 0 && (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="h-5 w-5 rounded-full bg-amber-500 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">!</span>
+            </span>
+            <h3 className="font-medium text-amber-700 dark:text-amber-400">
+              AI 检测到以下问题
+            </h3>
+          </div>
+          <ul className="space-y-1">
+            {aiWarnings.map((warning, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400"
+              >
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-600 flex-shrink-0" />
+                {warning.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold text-foreground">关键词表</h3>
+          </div>
           <Button
             variant="ghost"
             size="sm"
@@ -258,13 +291,11 @@ export function Step3TechSolution({
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-8 text-center">
             <p className="text-sm text-muted-foreground">
-              暂无关键词，点击右上角添加或等待 AI 自动生成
+              暂无关键词，点击"提取关键词"按钮或等待 AI 自动生成
             </p>
           </div>
         )}
       </div>
-
-      {/* ... 关键词表部分保持不变 ... */}
     </div>
   );
 }
