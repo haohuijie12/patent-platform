@@ -79,7 +79,7 @@ export function Step5Preview({
                       {block.content}
                     </div>
                   ) : block.imageUrl ? (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <img
                         src={block.imageUrl || "/placeholder.svg"}
                         alt={block.content}
@@ -88,6 +88,24 @@ export function Step5Preview({
                       <p className="text-sm text-muted-foreground">
                         图 {index + 1}：{block.content}
                       </p>
+                      
+                      {/* 预览中的检测结果 */}
+                      {block.detectionResult && (
+                        <div className={block.detectionResult.pass 
+                          ? "rounded-lg border border-green-200 bg-green-50 p-3" 
+                          : "rounded-lg border border-red-200 bg-red-50 p-3"
+                        }>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`h-2 w-2 rounded-full ${block.detectionResult.pass ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                            <span className="text-sm font-medium">
+                              图片检测：{block.detectionResult.pass ? '✓ 符合要求' : '✗ 不符合要求'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {block.detectionResult.reason}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>

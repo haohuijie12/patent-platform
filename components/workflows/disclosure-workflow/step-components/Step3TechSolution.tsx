@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus, X, ImageIcon, Sparkles, BookOpen } from "lucide-react";
+import { Plus, X, ImageIcon, Sparkles, BookOpen, RefreshCw } from "lucide-react";
 import type { ContentBlock, KeywordDefinition, AIWarning } from "../types";
 
 interface Step3TechSolutionProps {
@@ -22,6 +22,7 @@ interface Step3TechSolutionProps {
     e: React.ChangeEvent<HTMLInputElement>,
   ) => void;
   handleOptimizeBlock: (id: string) => void;
+  handleRedetectImage: (id: string) => void; // 新增：重新检测图片
   handleAIRewrite: () => void;
   extractKeywords: () => void;
   addKeyword: () => void;
@@ -46,6 +47,7 @@ export function Step3TechSolution({
   deleteContentBlock,
   handleImageUpload,
   handleOptimizeBlock,
+  handleRedetectImage,
   handleAIRewrite,
   extractKeywords,
   addKeyword,
@@ -118,23 +120,94 @@ export function Step3TechSolution({
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {block.imageUrl ? (
-                    <div className="relative">
+                <div className="space-y-4">
+                  {block.isDetecting ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="mb-2 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <p className="text-sm text-muted-foreground">
+                        正在检测图片...
+                      </p>
+                    </div>
+                  ) : block.imageUrl ? (
+                    <div className="space-y-3">
                       <img
                         src={block.imageUrl || "/placeholder.svg"}
                         alt={block.content}
-                        className="max-h-64 rounded-lg object-contain"
+                        className="max-h-64 w-full rounded-lg object-contain"
                       />
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {block.content}
-                      </p>
+                      
+                      {/* 图片检测结果 */}
+                      {block.detectionResult && (
+                        <div className={cn(
+                          "rounded-lg border p-3",
+                          block.detectionResult.pass 
+                            ? "border-green-500/50 bg-green-500/10" 
+                            : "border-red-500/50 bg-red-500/10"
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              {block.detectionResult.pass ? (
+                                <>
+                                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                                  <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                                    图片检测通过
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                                  <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                                    图片检测未通过
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => handleRedetectImage(block.id)}
+                            >
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              重新检测
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {block.detectionResult.reason}
+                          </p>
+                          <div className="mt-2 flex gap-4 text-xs">
+                            <span className={cn(
+                              block.detectionResult.isWhiteBackground
+                                ? "text-green-600"
+                                : "text-red-600"
+                            )}>
+                              背景: {block.detectionResult.isWhiteBackground ? "白色" : "非白色"}
+                            </span>
+                            <span className={cn(
+                              block.detectionResult.isBlackLines
+                                ? "text-green-600"
+                                : "text-red-600"
+                            )}>
+                              线条: {block.detectionResult.isBlackLines ? "黑色" : "非黑色"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 图片描述输入框 */}
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateContentBlock(block.id, e.target.value)}
+                        placeholder="请输入图片描述..."
+                        className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary"
+                      />
                     </div>
                   ) : (
                     <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary">
                       <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
-                        点击上传图片
+                        点击上传图片（将自动检测是否符合专利要求）
                       </span>
                       <input
                         type="file"
